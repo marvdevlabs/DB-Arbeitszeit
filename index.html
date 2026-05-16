@@ -2,7 +2,16 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Arbeitszeit">
+<meta name="theme-color" content="#EC0016" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131316" media="(prefers-color-scheme: dark)">
+<meta name="format-detection" content="telephone=no">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23EC0016'/%3E%3Ctext x='50' y='70' font-family='-apple-system,Helvetica,Arial,sans-serif' font-size='52' font-weight='700' fill='%23fff' text-anchor='middle'%3EAZ%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23EC0016'/%3E%3Ctext x='50' y='70' font-family='-apple-system,Helvetica,Arial,sans-serif' font-size='52' font-weight='700' fill='%23fff' text-anchor='middle'%3EAZ%3C/text%3E%3C/svg%3E">
 <title>Arbeitszeit-Rechner</title>
 <style>
   :root {
@@ -58,10 +67,16 @@
     color: var(--text-main);
     min-height: 100vh;
     padding: 12px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
     transition: background 0.25s, color 0.25s;
   }
+  input, button, textarea, select { -webkit-tap-highlight-color: transparent; }
   .container {
     max-width: 780px;
     margin: 0 auto;
@@ -92,6 +107,14 @@
     border-radius: 14px 14px 0 0;
     position: relative;
   }
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 55%);
+    pointer-events: none;
+    border-radius: 14px 14px 0 0;
+  }
   header::after {
     content: '';
     position: absolute;
@@ -99,20 +122,42 @@
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(0,0,0,0.18), transparent);
   }
+  header > * { position: relative; z-index: 1; }
   header h1 { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; }
   header .sub { font-size: 12px; opacity: 0.92; margin-top: 2px; }
   .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-  .theme-toggle, .step-indicator {
+  .theme-toggle {
     background: rgba(0,0,0,0.22); color: #fff; border: none;
-    padding: 5px 12px; border-radius: 100px;
-    font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
+    width: 32px; height: 32px; padding: 0;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
     cursor: pointer; font-family: inherit;
     transition: background 0.15s, transform 0.08s;
     backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   }
   .theme-toggle:hover { background: rgba(0,0,0,0.35); }
-  .theme-toggle:active { transform: scale(0.96); }
-  .step-indicator { cursor: default; }
+  .theme-toggle:active { transform: scale(0.92); }
+  .theme-toggle svg { width: 16px; height: 16px; display: block; }
+  body[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+  body:not([data-theme="dark"]) .theme-toggle .icon-sun { display: none; }
+
+  .step-indicator {
+    background: rgba(0,0,0,0.22);
+    padding: 8px 12px;
+    border-radius: 100px;
+    display: inline-flex; align-items: center; gap: 6px;
+    cursor: default;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .step-indicator .dot {
+    display: block;
+    width: 6px; height: 6px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.40);
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s;
+  }
+  .step-indicator .dot.done { background: rgba(255,255,255,0.85); }
+  .step-indicator .dot.current { width: 18px; background: #fff; }
 
   .restored-banner {
     background: var(--info-bg);
@@ -365,26 +410,28 @@
   }
   body[data-theme="dark"] .pausen-hinweis button:hover { background: #FFD27A; color: #2A2A2E; }
 
-  /* === Summary (sticky, kompakte Zeile) === */
+  /* === Summary === */
   .summary {
     background: linear-gradient(135deg, #3C3D41 0%, #2A2B2F 100%);
     color: #fff;
-    padding: 13px 20px;
+    padding: 14px 18px;
     border-radius: 12px;
     margin-top: 14px;
-    position: sticky;
-    bottom: 12px;
-    z-index: 10;
     box-shadow:
       0 1px 3px rgba(0,0,0,0.10),
       0 8px 28px rgba(0,0,0,0.20),
       inset 0 1px 0 rgba(255,255,255,0.06);
     display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: box-shadow 0.2s;
+  }
+  .summary-top {
+    display: flex;
     align-items: center;
     gap: 14px;
-    transition: box-shadow 0.2s;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.14);
   }
   body[data-theme="dark"] .summary {
     background: linear-gradient(135deg, #2A2B2F 0%, #1F2024 100%);
@@ -457,8 +504,7 @@
   .summary-limit.over-danger { background: rgba(236, 0, 22, 0.55); font-weight: 700; }
 
   /* ===== Summary – schlichte Sektionen ===== */
-  .summary-section { padding-top: 8px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.18); }
-  .summary-section:first-of-type { padding-top: 0; margin-top: 0; border-top: none; }
+  .summary-section { padding-top: 0; margin-top: 0; border-top: none; }
   .summary-section-title {
     font-size: 11px;
     text-transform: uppercase;
@@ -575,6 +621,11 @@
     header h1 { font-size: 17px; }
     .step { padding: 14px 16px; }
     .summary-grid { grid-template-columns: 1fr; gap: 2px 0; }
+    .summary-grid > .summary-section + .summary-section {
+      padding-top: 10px;
+      margin-top: 6px;
+      border-top: 1px solid rgba(255,255,255,0.16);
+    }
     .restored-banner { margin: 12px 16px 0; }
   }
   @media (max-width: 520px) {
@@ -593,7 +644,8 @@
     .auftrag-times { font-size: 11px; width: 100%; text-align: left; }
     .time-row { grid-template-columns: 34px 1fr 70px; gap: 6px; }
     .minutes-display { display: none; }
-    .summary { padding: 10px 14px; bottom: 6px; gap: 8px; }
+    .summary { padding: 12px 14px; gap: 10px; }
+    .summary-top { gap: 10px; padding-bottom: 8px; }
     .summary-times { font-size: 16px; }
     .summary-arrow { margin: 0 4px; }
     .summary-label, .summary-badge { font-size: 10px; padding: 2px 7px; }
@@ -678,7 +730,8 @@
     .summary.warn { background: #B8860B !important; }
     .summary.danger { background: var(--db-red-dark) !important; }
     .summary h2 { font-size: 10pt; margin-bottom: 2mm; }
-    .summary-grid { grid-template-columns: repeat(3, 1fr); font-size: 8.5pt; gap: 0 6mm; }
+    .summary-grid { grid-template-columns: repeat(2, 1fr); font-size: 8.5pt; gap: 0 6mm; }
+    .summary-top { padding-bottom: 1.5mm; border-bottom: 0.2mm solid rgba(255,255,255,0.30); }
     .summary-row { padding: 0.5mm 0; }
     .summary-total { font-size: 10pt; padding-top: 2mm; margin-top: 2mm; }
     .summary-soll { background: rgba(255,255,255,0.15) !important; font-size: 9pt; padding: 1.5mm 3mm; }
@@ -725,8 +778,16 @@
       <div class="sub">1 AE = 10 Minuten · Soll 7:48h Arbeitszeit (ohne Anfahrt/Abfahrt/Pause)</div>
     </div>
     <div class="header-right">
-      <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Theme wechseln">Dunkel</button>
-      <div class="step-indicator" id="step-indicator">Schritt 1 / 4</div>
+      <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Theme wechseln" aria-label="Theme wechseln">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </button>
+      <div class="step-indicator" id="step-indicator" aria-label="Schritt 1 von 4">
+        <span class="dot current"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
     </div>
   </header>
 
@@ -921,7 +982,7 @@
   function applyTheme(theme) {
     document.body.dataset.theme = theme;
     const btn = document.getElementById('themeBtn');
-    if (btn) btn.textContent = theme === 'dark' ? 'Hell' : 'Dunkel';
+    if (btn) btn.title = theme === 'dark' ? 'Heller Modus' : 'Dunkler Modus';
   }
   function toggleTheme() {
     const next = (document.body.dataset.theme === 'dark') ? 'light' : 'dark';
@@ -941,11 +1002,19 @@
     for (let i = 1; i <= 4; i++) {
       document.getElementById('step' + i).classList.toggle('hidden', i !== n);
     }
-    document.getElementById('step-indicator').textContent = 'Schritt ' + n + ' / 4';
+    const indicator = document.getElementById('step-indicator');
+    indicator.setAttribute('aria-label', 'Schritt ' + n + ' von 4');
+    const dots = indicator.querySelectorAll('.dot');
+    dots.forEach((d, idx) => {
+      const step = idx + 1;
+      d.classList.toggle('current', step === n);
+      d.classList.toggle('done', step < n);
+    });
     if (n === 1) refreshStep1();
     if (n === 2) refreshStep2();
     if (n === 3) renderSapInputs();
     if (n === 4) renderAuftraege();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     saveState();
   }
   function refreshStep1() {
@@ -1185,10 +1254,11 @@
     const bruttoMin = endMin - startMin;
     const { pauseMin } = computeAbzug(bruttoMin);
     const nettoMin = Math.max(0, bruttoMin - 60 - pauseMin);
-
-    // 10h-Modal-Trigger weiterhin aktiv
+    const { totalReise, totalArbeit, totalRueck, totalAE } = calcTotals();
+    const plusMin = nettoMin - SOLL_MIN;
     const h10Check = nettoMin + 60;
     const h10Over = h10Check - LIMIT10H_MIN;
+
     if (h10Over > 0 && !state.tenHourAck) {
       setTimeout(() => showModal10h(fmtDuration(h10Check)), 50);
     } else if (h10Over <= 0 && state.tenHourAck) {
@@ -1196,12 +1266,47 @@
       saveState();
     }
 
+    let sollClass = '', sollText = '';
+    if (plusMin === 0) { sollClass = 'met'; sollText = 'Soll erreicht'; }
+    else if (plusMin > 0) { sollClass = 'over'; sollText = '+' + fmtDuration(plusMin); }
+    else { sollText = '−' + fmtDuration(-plusMin) + ' bis Soll'; }
+
+    let limitClass = '';
+    if (h10Over > 30) limitClass = 'over-danger';
+    else if (h10Over > 0) limitClass = 'over-warn';
+    const limitText = fmtDuration(h10Check) + ' / 10:00h' + (h10Over > 0 ? '  überschritten' : '');
+
     const summary = document.getElementById('summary');
     summary.className = 'summary';
     summary.innerHTML = `
-      <span class="summary-label">Heute</span>
-      <span class="summary-times">${minutesToHHMM(startMin)}<span class="summary-arrow">→</span>${minutesToHHMM(endMin)}</span>
-      ${state.bereitschaft ? '<span class="summary-badge">Bereitschaft</span>' : '<span class="summary-badge" style="visibility:hidden">Bereitschaft</span>'}
+      <div class="summary-top">
+        <span class="summary-label">Heute</span>
+        <span class="summary-times">${minutesToHHMM(startMin)}<span class="summary-arrow">→</span>${minutesToHHMM(endMin)}</span>
+        ${state.bereitschaft ? '<span class="summary-badge">Bereitschaft</span>' : ''}
+      </div>
+      <div class="summary-grid">
+        <div class="summary-section">
+          <div class="summary-section-title">Zeit</div>
+          <div class="summary-row"><span>Brutto</span><span>${fmtDuration(bruttoMin)}</span></div>
+          <div class="summary-row"><span>Pause (auto)</span><span>${pauseMin} min</span></div>
+          <div class="summary-row emphasized"><span>Arbeit netto</span><span>${fmtDuration(nettoMin)}</span></div>
+        </div>
+        <div class="summary-section">
+          <div class="summary-section-title">AE-Werte</div>
+          <div class="summary-row"><span>Reise</span><span>${formatAE(totalReise)} AE</span></div>
+          <div class="summary-row"><span>Arbeit</span><span>${formatAE(totalArbeit)} AE</span></div>
+          <div class="summary-row"><span>Rück</span><span>${formatAE(totalRueck)} AE</span></div>
+          <div class="summary-row emphasized"><span>Gesamt</span><span>${formatAE(totalAE)} AE</span></div>
+        </div>
+        <div class="summary-soll ${sollClass}">
+          <span>Soll-Vergleich · 7:48h</span>
+          <span>${sollText}</span>
+        </div>
+        <div class="summary-limit ${limitClass}">
+          <span>10h-Status · inkl. Fahrt</span>
+          <span>${limitText}</span>
+        </div>
+      </div>
     `;
   }
 
