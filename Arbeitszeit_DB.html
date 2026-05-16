@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arbeitszeit-Rechner</title>
+<style>
+  :root {
+    --db-red: #EC0016;
+    --db-red-dark: #C50014;
+    --db-red-light: #FEE2E2;
+    --db-gray: #3C3D41;
+    --db-gray-light: #F5F5F5;
+
+    --bg-page: #F2F3F5;
+    --bg-page-2: #E4E6EA;
+    --bg-container: #ffffff;
+    --bg-card: #ffffff;
+    --bg-card-alt: #F7F8FA;
+    --bg-input: #ffffff;
+    --bg-button-soft: #EFF1F4;
+    --text-main: #1F2024;
+    --text-strong: #2C2D31;
+    --text-secondary: #5F6168;
+    --text-muted: #8A8D94;
+    --border: #E2E4E8;
+    --border-input: #D1D4DA;
+    --border-light: #EEEFF2;
+    --info-bg: var(--db-red-light);
+    --info-text: #444444;
+    --switch-off: #D1D4DA;
+  }
+  body[data-theme="dark"] {
+    --bg-page: #131316;
+    --bg-page-2: #08080A;
+    --bg-container: #1B1C20;
+    --bg-card: #24252A;
+    --bg-card-alt: #2A2B30;
+    --bg-input: #26272C;
+    --bg-button-soft: #2A2B30;
+    --text-main: #E8E8EB;
+    --text-strong: #F5F5F7;
+    --text-secondary: #A8AAB0;
+    --text-muted: #7C7E84;
+    --border: #353740;
+    --border-input: #42444E;
+    --border-light: #2C2D33;
+    --info-bg: rgba(236, 0, 22, 0.12);
+    --info-text: #D0D0D0;
+    --switch-off: #4A4C54;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+    background: radial-gradient(ellipse at top, var(--bg-page) 0%, var(--bg-page-2) 100%);
+    background-attachment: fixed;
+    color: var(--text-main);
+    min-height: 100vh;
+    padding: 12px;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.25s, color 0.25s;
+  }
+  .container {
+    max-width: 780px;
+    margin: 0 auto;
+    background: var(--bg-container);
+    border-radius: 14px;
+    box-shadow:
+      0 1px 2px rgba(0,0,0,0.04),
+      0 8px 24px rgba(0,0,0,0.08),
+      0 24px 60px rgba(0,0,0,0.06);
+    overflow: visible;
+    transition: background 0.25s;
+  }
+  body[data-theme="dark"] .container {
+    box-shadow:
+      0 1px 2px rgba(0,0,0,0.25),
+      0 8px 28px rgba(0,0,0,0.45),
+      0 32px 80px rgba(0,0,0,0.30);
+  }
+
+  header {
+    background: linear-gradient(135deg, var(--db-red) 0%, var(--db-red-dark) 100%);
+    color: #fff;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-radius: 14px 14px 0 0;
+    position: relative;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,0,0,0.18), transparent);
+  }
+  header h1 { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; }
+  header .sub { font-size: 12px; opacity: 0.92; margin-top: 2px; }
+  .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .theme-toggle, .step-indicator {
+    background: rgba(0,0,0,0.22); color: #fff; border: none;
+    padding: 5px 12px; border-radius: 100px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
+    cursor: pointer; font-family: inherit;
+    transition: background 0.15s, transform 0.08s;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .theme-toggle:hover { background: rgba(0,0,0,0.35); }
+  .theme-toggle:active { transform: scale(0.96); }
+  .step-indicator { cursor: default; }
+
+  .restored-banner {
+    background: var(--info-bg);
+    color: var(--info-text);
+    border-left: 3px solid var(--db-red);
+    padding: 8px 12px;
+    margin: 12px 20px 0;
+    border-radius: 4px;
+    font-size: 12.5px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; flex-wrap: wrap;
+  }
+  .restored-banner.hidden { display: none; }
+  .restored-banner button {
+    background: transparent;
+    color: var(--db-red);
+    border: 1.5px solid var(--db-red);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  .restored-banner button:hover { background: var(--db-red); color: #fff; }
+
+  .step { padding: 16px 20px; }
+  .step.hidden { display: none; }
+  .step h2 { font-size: 16px; margin-bottom: 12px; color: var(--text-strong); }
+
+  .form-row { margin-bottom: 12px; }
+  label { display: block; font-weight: 600; margin-bottom: 4px; color: var(--text-strong); font-size: 13px; }
+  input[type="number"], input[type="time"], input[type="text"] {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1.5px solid var(--border-input);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--bg-input);
+    color: var(--text-main);
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.2s;
+  }
+  input:focus { outline: none; border-color: var(--db-red); box-shadow: 0 0 0 3px rgba(236,0,22,0.14); }
+  body[data-theme="dark"] input:focus { box-shadow: 0 0 0 3px rgba(236,0,22,0.30); }
+  body[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator,
+  body[data-theme="dark"] input[type="number"]::-webkit-inner-spin-button { filter: invert(0.9); }
+
+  .btn {
+    background: linear-gradient(180deg, var(--db-red) 0%, var(--db-red-dark) 100%);
+    color: #fff; border: none;
+    padding: 10px 20px; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    letter-spacing: 0.1px;
+    box-shadow: 0 1px 2px rgba(236,0,22,0.20), inset 0 1px 0 rgba(255,255,255,0.18);
+    transition: box-shadow 0.15s, transform 0.08s, filter 0.15s;
+    font-family: inherit;
+  }
+  .btn:hover { filter: brightness(1.06); box-shadow: 0 4px 14px rgba(236,0,22,0.30), inset 0 1px 0 rgba(255,255,255,0.18); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(236,0,22,0.15), inset 0 1px 0 rgba(255,255,255,0.10); }
+  .btn-secondary {
+    background: linear-gradient(180deg, #8A8D94 0%, #6C6F76 100%);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .btn-secondary:hover { filter: brightness(1.06); box-shadow: 0 4px 14px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.15); }
+  .btn-outline {
+    background: transparent; color: var(--db-red);
+    border: 1.5px solid var(--db-red);
+    box-shadow: none;
+  }
+  .btn-outline:hover { background: var(--db-red); color: #fff; box-shadow: 0 4px 14px rgba(236,0,22,0.25); }
+  .button-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; justify-content: space-between; }
+  .button-row .left, .button-row .right { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .info-box {
+    background: var(--bg-card-alt);
+    border-left: 3px solid var(--db-red);
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    font-size: 12.5px; line-height: 1.55;
+    color: var(--text-secondary);
+  }
+  body[data-theme="dark"] .info-box { background: rgba(255,255,255,0.04); }
+
+  .choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+  .choice-btn {
+    background: var(--bg-card); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 24px 16px;
+    cursor: pointer; font-size: 15px; font-weight: 700;
+    color: var(--text-strong);
+    transition: transform 0.15s, box-shadow 0.2s, border-color 0.15s, background 0.2s;
+    text-align: center; font-family: inherit;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .choice-btn:hover {
+    border-color: var(--db-red); background: var(--info-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(236,0,22,0.10);
+  }
+  .choice-btn.active {
+    background: linear-gradient(135deg, var(--db-red) 0%, var(--db-red-dark) 100%);
+    color: #fff; border-color: var(--db-red);
+    box-shadow: 0 6px 18px rgba(236,0,22,0.30), inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .choice-btn.active small { color: #fff; }
+  .choice-btn small { display: block; font-weight: 400; font-size: 12px; margin-top: 4px; color: var(--text-muted); }
+
+  .sap-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--db-red);
+    border-radius: 10px;
+    padding: 16px; margin-bottom: 10px;
+    transition: transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .sap-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
+  }
+  body[data-theme="dark"] .sap-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.45), 0 1px 3px rgba(0,0,0,0.30); }
+  .sap-card-title { font-weight: 700; color: var(--text-strong); margin-bottom: 8px; font-size: 14px; }
+  .splits-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .splits-label { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
+  .split-btn {
+    background: var(--bg-button-soft);
+    border: 1.5px solid var(--border-input);
+    color: var(--text-secondary);
+    padding: 7px 13px; border-radius: 7px;
+    cursor: pointer; font-weight: 700;
+    font-size: 13px; min-width: 44px;
+    font-family: inherit;
+    transition: transform 0.1s, border-color 0.15s, color 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+  .split-btn:hover { border-color: var(--db-red); color: var(--db-red); transform: translateY(-1px); }
+  .split-btn.active {
+    background: linear-gradient(180deg, var(--db-red) 0%, var(--db-red-dark) 100%);
+    color: #fff; border-color: var(--db-red);
+    box-shadow: 0 2px 8px rgba(236,0,22,0.30), inset 0 1px 0 rgba(255,255,255,0.18);
+    transform: translateY(0);
+  }
+
+  .auftrag-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--db-red);
+    border-radius: 10px;
+    padding: 14px 16px; margin-bottom: 10px;
+    transition: transform 0.15s, box-shadow 0.2s, border-color 0.15s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .auftrag-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
+  }
+  body[data-theme="dark"] .auftrag-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.45), 0 1px 3px rgba(0,0,0,0.30); }
+  .auftrag-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .auftrag-name {
+    flex: 1; font-size: 14px; font-weight: 700;
+    color: var(--text-strong);
+    padding: 4px 6px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    min-width: 0;
+  }
+  .auftrag-name:hover { background: var(--bg-card-alt); }
+  .auftrag-name:focus { background: var(--bg-input); border-color: var(--db-red); outline: none; }
+  .auftrag-times { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+  .auftrag-times strong { color: var(--db-red); font-size: 13px; }
+
+  .time-row {
+    display: grid;
+    grid-template-columns: 38px 1fr 80px 60px;
+    gap: 8px; align-items: center; padding: 5px 0;
+  }
+  .time-row.split-row { background: var(--bg-card-alt); padding: 6px 8px; border-radius: 4px; margin: 2px 0; }
+  .time-row.disabled .time-label,
+  .time-row.disabled .minutes-display { opacity: 0.4; }
+
+  .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: var(--switch-off); border-radius: 20px;
+    transition: background 0.2s;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.10);
+  }
+  .slider:before {
+    position: absolute; content: "";
+    height: 16px; width: 16px;
+    left: 2px; bottom: 2px;
+    background: white; border-radius: 50%;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.20), 0 1px 1px rgba(0,0,0,0.06);
+  }
+  .switch input:checked + .slider {
+    background: linear-gradient(180deg, var(--db-red) 0%, var(--db-red-dark) 100%);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.18);
+  }
+  .switch input:checked + .slider:before { transform: translateX(16px); }
+  .switch.locked .slider { background: linear-gradient(180deg, var(--db-red) 0%, var(--db-red-dark) 100%); cursor: not-allowed; }
+  .switch.locked .slider:before { transform: translateX(16px); }
+
+  .time-label { font-size: 13px; color: var(--text-main); line-height: 1.3; }
+  .time-label small { display: block; font-size: 11px; color: var(--text-muted); }
+  .split-badge {
+    display: inline-block;
+    background: var(--db-red); color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 1px 6px; border-radius: 3px;
+    margin-right: 6px; vertical-align: middle;
+  }
+
+  .ae-input { padding: 5px 6px !important; text-align: center; font-size: 13px !important; font-variant-numeric: tabular-nums; }
+  .minutes-display { font-size: 12px; color: var(--text-secondary); text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* === Pausen-Hinweis === */
+  .pausen-hinweis {
+    background: #FFF3CD;
+    color: #6B4F00;
+    border-left: 4px solid #B8860B;
+    padding: 10px 14px;
+    border-radius: 5px;
+    margin-top: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px; font-size: 13px; line-height: 1.4;
+  }
+  .pausen-hinweis.hidden { display: none; }
+  .pausen-hinweis button {
+    background: transparent;
+    border: 1.5px solid #6B4F00;
+    color: #6B4F00;
+    padding: 5px 12px;
+    font-size: 12px; font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer; white-space: nowrap;
+    font-family: inherit;
+  }
+  .pausen-hinweis button:hover { background: #6B4F00; color: #FFF3CD; }
+  body[data-theme="dark"] .pausen-hinweis {
+    background: rgba(184, 134, 11, 0.22);
+    color: #FFD27A;
+  }
+  body[data-theme="dark"] .pausen-hinweis button {
+    border-color: #FFD27A; color: #FFD27A;
+  }
+  body[data-theme="dark"] .pausen-hinweis button:hover { background: #FFD27A; color: #2A2A2E; }
+
+  /* === Summary (sticky, kompakte Zeile) === */
+  .summary {
+    background: linear-gradient(135deg, #3C3D41 0%, #2A2B2F 100%);
+    color: #fff;
+    padding: 13px 20px;
+    border-radius: 12px;
+    margin-top: 14px;
+    position: sticky;
+    bottom: 12px;
+    z-index: 10;
+    box-shadow:
+      0 1px 3px rgba(0,0,0,0.10),
+      0 8px 28px rgba(0,0,0,0.20),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: box-shadow 0.2s;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  body[data-theme="dark"] .summary {
+    background: linear-gradient(135deg, #2A2B2F 0%, #1F2024 100%);
+    box-shadow:
+      0 1px 3px rgba(0,0,0,0.25),
+      0 8px 32px rgba(0,0,0,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  .summary h2 { display: none; }
+  .summary-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    opacity: 0.65;
+    white-space: nowrap;
+  }
+  .summary-times {
+    flex: 1;
+    text-align: center;
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    font-variant-numeric: tabular-nums;
+  }
+  .summary-arrow {
+    color: var(--db-red);
+    margin: 0 8px;
+    font-weight: 400;
+  }
+  .summary-badge {
+    font-size: 10.5px;
+    background: rgba(255,255,255,0.16);
+    padding: 3px 10px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 16px; font-size: 13px; }
+  .summary-row { display: flex; justify-content: space-between; padding: 3px 0; }
+  .summary-total {
+    grid-column: 1 / -1;
+    margin-top: 6px; padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.25);
+    display: flex; justify-content: space-between;
+    font-weight: 700; font-size: 15px;
+  }
+  .summary-soll {
+    grid-column: 1 / -1;
+    margin-top: 4px; padding: 6px 10px;
+    background: rgba(255,255,255,0.10);
+    border-radius: 4px;
+    display: flex; justify-content: space-between;
+    font-weight: 600; font-size: 13px;
+  }
+  .summary-soll.over { background: rgba(255, 184, 77, 0.25); }
+  .summary-soll.met  { background: rgba(76, 175, 80, 0.30); }
+
+  .summary-limit {
+    grid-column: 1 / -1;
+    margin-top: 3px; padding: 6px 10px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px;
+    display: flex; justify-content: space-between;
+    font-weight: 600; font-size: 12.5px;
+  }
+  .summary-limit.over-warn { background: rgba(255, 184, 77, 0.32); font-weight: 700; }
+  .summary-limit.over-danger { background: rgba(236, 0, 22, 0.55); font-weight: 700; }
+
+  /* ===== Summary – schlichte Sektionen ===== */
+  .summary-section { padding-top: 8px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.18); }
+  .summary-section:first-of-type { padding-top: 0; margin-top: 0; border-top: none; }
+  .summary-section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    opacity: 0.7;
+    margin-bottom: 4px;
+  }
+  .summary-row.emphasized { font-weight: 700; font-size: 14px; padding: 4px 0; }
+  .summary-row.over-10h {
+    background: rgba(236, 0, 22, 0.45);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .plus-over { color: #FFD27A; font-weight: 600; }
+  .plus-met  { color: #A5D6A7; font-weight: 600; }
+  .plus-under { color: #DDDDDD; }
+
+  /* ===== Modal (10h Bestätigung) ===== */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,10,12,0.55);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 20px;
+    animation: fadeIn 0.18s ease-out;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal-card {
+    background: var(--bg-container);
+    color: var(--text-main);
+    border-radius: 14px;
+    padding: 24px 26px 22px;
+    max-width: 460px; width: 100%;
+    box-shadow:
+      0 1px 3px rgba(0,0,0,0.10),
+      0 24px 60px rgba(0,0,0,0.30),
+      0 4px 12px rgba(0,0,0,0.12);
+    border-top: 4px solid var(--db-red);
+    animation: modalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .modal-title {
+    font-size: 18px; font-weight: 700;
+    color: var(--db-red);
+    margin-bottom: 14px;
+    letter-spacing: -0.2px;
+  }
+  .modal-body { font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
+  .modal-body p { margin-bottom: 10px; }
+  .modal-body strong { color: var(--db-red); font-weight: 700; }
+  .modal-actions {
+    display: flex; gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  @media (max-width: 520px) {
+    .modal-actions .btn { flex: 1; }
+  }
+
+  .protokoll {
+    background: linear-gradient(180deg, #1F2024 0%, #16171A 100%);
+    color: #ECECEC;
+    padding: 14px 16px; border-radius: 10px; margin-top: 10px;
+    font-family: "JetBrains Mono", "SF Mono", "Consolas", "Monaco", monospace;
+    font-size: 12.5px; line-height: 1.7;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.04),
+      0 1px 3px rgba(0,0,0,0.08);
+  }
+  body[data-theme="dark"] .protokoll {
+    background: linear-gradient(180deg, #0E0E10 0%, #060607 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.03),
+      0 1px 3px rgba(0,0,0,0.20);
+  }
+  .protokoll-group { padding: 2px 0; }
+  .protokoll-group-header {
+    color: #FFB84D;
+    font-weight: 800;
+    font-size: 12.5px;
+    letter-spacing: 0.3px;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+  }
+  .protokoll-line { display: flex; justify-content: flex-start; gap: 16px; padding: 1px 0 1px 14px; }
+  .protokoll-time { color: #FFD27A; font-weight: 700; white-space: nowrap; min-width: 100px; }
+  .protokoll-text { color: #ECECEC; }
+  .protokoll-separator { border: none; border-top: 1px dashed rgba(255,255,255,0.25); margin: 8px 0; }
+  h3.section { margin-top: 14px; margin-bottom: 4px; font-size: 13px; color: var(--text-strong); font-weight: 700; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--db-gray); color: #fff;
+    padding: 10px 18px; border-radius: 5px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    font-size: 13px; font-weight: 600;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 720px) {
+    body { padding: 8px; font-size: 13.5px; }
+    .container { border-radius: 6px; }
+    header { padding: 12px 16px; }
+    header h1 { font-size: 17px; }
+    .step { padding: 14px 16px; }
+    .summary-grid { grid-template-columns: 1fr; gap: 2px 0; }
+    .restored-banner { margin: 12px 16px 0; }
+  }
+  @media (max-width: 520px) {
+    body { padding: 4px; }
+    .container { border-radius: 6px; }
+    header { padding: 12px 14px; }
+    header h1 { font-size: 16px; }
+    header .sub { font-size: 11px; }
+    .theme-toggle, .step-indicator { font-size: 11px; padding: 3px 8px; }
+    .step { padding: 12px 14px; }
+    .info-box { font-size: 12px; padding: 9px 12px; }
+    .restored-banner { margin: 8px 14px 0; font-size: 12px; }
+    .auftrag-card { padding: 10px 12px; }
+    .auftrag-header { flex-wrap: wrap; gap: 6px; }
+    .auftrag-name { font-size: 13px; }
+    .auftrag-times { font-size: 11px; width: 100%; text-align: left; }
+    .time-row { grid-template-columns: 34px 1fr 70px; gap: 6px; }
+    .minutes-display { display: none; }
+    .summary { padding: 10px 14px; bottom: 6px; gap: 8px; }
+    .summary-times { font-size: 16px; }
+    .summary-arrow { margin: 0 4px; }
+    .summary-label, .summary-badge { font-size: 10px; padding: 2px 7px; }
+    .protokoll { font-size: 11.5px; padding: 10px 12px; }
+    .protokoll-time { min-width: 90px; }
+    .btn { padding: 10px 14px; flex: 1; }
+    .choice-row { grid-template-columns: 1fr; }
+    .split-btn { flex: 1; min-width: 40px; }
+  }
+  @media (max-width: 360px) {
+    .time-row { grid-template-columns: 30px 1fr 60px; gap: 4px; }
+    .switch { width: 30px; height: 16px; }
+    .switch .slider:before { height: 12px; width: 12px; }
+    .switch input:checked + .slider:before { transform: translateX(14px); }
+    .ae-input { font-size: 12px !important; }
+  }
+
+  /* ===== Print / PDF ===== */
+  @media print {
+    @page { size: A4 landscape; margin: 8mm; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { background: #fff !important; padding: 0; font-size: 9.5pt; color: #000 !important; }
+    body[data-theme="dark"] { color: #000 !important; }
+    body[data-theme="dark"] * { color: inherit !important; }
+    .container { box-shadow: none; border-radius: 0; max-width: 100%; background: #fff !important; }
+    header { padding: 4mm 6mm; background: var(--db-red) !important; color: #fff !important; border-radius: 0; }
+    header * { color: #fff !important; }
+    header h1 { font-size: 13pt; }
+    header .sub { font-size: 8pt; }
+    .step-indicator, .theme-toggle, .restored-banner, .pausen-hinweis { display: none !important; }
+
+    .info-box, .button-row,
+    #step1, #step2, #step3,
+    .switch, .minutes-display,
+    .toast { display: none !important; }
+
+    .step { padding: 4mm 6mm; }
+
+    #auftraege-container { column-count: 2; column-gap: 6mm; column-fill: balance; }
+    .auftrag-card {
+      break-inside: avoid; page-break-inside: avoid;
+      margin-bottom: 3mm; padding: 2.5mm 3mm;
+      border: 0.4mm solid #999;
+      border-left: 1mm solid var(--db-red);
+      border-radius: 1mm;
+      background: #fff !important; color: #000 !important;
+    }
+    .auftrag-card * { color: #000 !important; }
+    .auftrag-header { margin-bottom: 2mm; padding-bottom: 1.2mm; border-bottom: 0.2mm solid #ccc; gap: 4mm; }
+    .auftrag-name {
+      border: none !important; background: transparent !important;
+      padding: 0 !important; box-shadow: none !important;
+      font-size: 11pt !important; font-weight: 700;
+    }
+    .auftrag-times { font-size: 12pt; color: #000 !important; font-weight: 700; }
+    .auftrag-times strong { color: var(--db-red) !important; font-size: 13pt; }
+
+    .time-row.disabled { display: none !important; }
+    .time-row.split-row { background: transparent !important; padding: 1mm 0 !important; }
+    .time-row { grid-template-columns: 1fr 14mm !important; gap: 2mm !important; padding: 1mm 0 !important; }
+    .time-label { font-size: 9.5pt; line-height: 1.3; }
+    .time-label small {
+      font-size: 12pt !important; color: #000 !important;
+      font-weight: 700; display: inline-block; margin-top: 1mm;
+    }
+    .split-badge { background: var(--db-red) !important; color: #fff !important; font-size: 8pt !important; }
+    .ae-input {
+      border: none !important; background: transparent !important;
+      padding: 0 !important; box-shadow: none !important;
+      font-weight: 700; font-size: 9.5pt !important;
+      text-align: right !important; color: #000 !important;
+    }
+
+    .summary {
+      position: static !important;
+      box-shadow: none !important;
+      background: var(--db-gray) !important; color: #fff !important;
+      margin-top: 3mm; padding: 3mm 4mm;
+      break-inside: avoid; page-break-inside: avoid;
+    }
+    .summary * { color: #fff !important; }
+    .summary.warn { background: #B8860B !important; }
+    .summary.danger { background: var(--db-red-dark) !important; }
+    .summary h2 { font-size: 10pt; margin-bottom: 2mm; }
+    .summary-grid { grid-template-columns: repeat(3, 1fr); font-size: 8.5pt; gap: 0 6mm; }
+    .summary-row { padding: 0.5mm 0; }
+    .summary-total { font-size: 10pt; padding-top: 2mm; margin-top: 2mm; }
+    .summary-soll { background: rgba(255,255,255,0.15) !important; font-size: 9pt; padding: 1.5mm 3mm; }
+    .summary-soll.over { background: rgba(255, 184, 77, 0.30) !important; }
+    .summary-soll.met { background: rgba(76, 175, 80, 0.35) !important; }
+    .summary-limit { background: rgba(255,255,255,0.10) !important; font-size: 8.5pt; padding: 1mm 3mm; }
+    .summary-limit.over-warn { background: rgba(255, 184, 77, 0.35) !important; }
+    .summary-limit.over-danger { background: rgba(236, 0, 22, 0.50) !important; }
+
+    .summary-section { margin-top: 2mm; padding-top: 1.5mm; }
+    .summary-section-title { font-size: 7.5pt; margin-bottom: 1mm; }
+    .summary-row.emphasized { font-size: 9.5pt; }
+    .summary-row.over-10h { background: rgba(236, 0, 22, 0.50) !important; padding: 1mm 2mm; }
+    .modal-overlay { display: none !important; }
+
+    h3.section { font-size: 9pt; margin-top: 3mm; margin-bottom: 1mm; color: #000 !important; }
+
+    .protokoll {
+      background: #fff !important; color: #000 !important;
+      border: 0.3mm solid #888;
+      font-size: 10pt; padding: 3mm 4mm; margin-top: 1mm;
+      line-height: 1.7;
+      column-count: 2; column-gap: 6mm;
+      font-family: "Consolas", "Monaco", monospace;
+    }
+    .protokoll * { color: #000 !important; }
+    .protokoll-group { break-inside: avoid; page-break-inside: avoid; }
+    .protokoll-group-header { color: var(--db-red) !important; font-size: 10pt !important; margin-bottom: 1mm; }
+    .protokoll-line { break-inside: avoid; padding: 0.5mm 0 0.5mm 6mm; gap: 4mm; }
+    .protokoll-time {
+      color: #000 !important;
+      font-size: 13pt !important; font-weight: 800 !important;
+      min-width: 36mm; letter-spacing: 0.3pt;
+    }
+    .protokoll-separator { border-top: 0.2mm dashed #888 !important; margin: 2mm 0 !important; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <h1>Arbeitszeit-Rechner</h1>
+      <div class="sub">1 AE = 10 Minuten · Soll 7:48h Arbeitszeit (ohne Anfahrt/Abfahrt/Pause)</div>
+    </div>
+    <div class="header-right">
+      <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Theme wechseln">Dunkel</button>
+      <div class="step-indicator" id="step-indicator">Schritt 1 / 4</div>
+    </div>
+  </header>
+
+  <div class="restored-banner hidden" id="restored-banner">
+    <span>Daten vom letzten Mal wiederhergestellt.</span>
+    <button onclick="resetAll()">Neuer Tag starten →</button>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="step" id="step1">
+    <h2>Hast du heute Bereitschaft?</h2>
+    <div class="info-box">Bei Bereitschaft startet der Tag um 09:00 Uhr, sonst um 06:30 Uhr. Du kannst die Zeit im nächsten Schritt noch anpassen.</div>
+    <div class="choice-row">
+      <button type="button" class="choice-btn" id="btn-nein" onclick="setBereitschaft(false)">
+        Nein <small>Start 06:30</small>
+      </button>
+      <button type="button" class="choice-btn" id="btn-ja" onclick="setBereitschaft(true)">
+        Ja <small>Start 09:00</small>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step hidden" id="step2">
+    <h2>Anzahl Aufträge & Startzeit</h2>
+    <div class="form-row">
+      <label for="anzahl">Aufträge heute</label>
+      <input type="number" id="anzahl" min="1" max="50" value="3" inputmode="numeric" pattern="[0-9]*">
+    </div>
+    <div class="form-row">
+      <label for="startzeit">Startzeit</label>
+      <input type="time" id="startzeit" value="06:30">
+    </div>
+    <div class="button-row">
+      <div class="left"><button class="btn btn-secondary" onclick="showStep(1)">← Zurück</button></div>
+      <div class="right"><button class="btn" onclick="goToStep3()">Weiter →</button></div>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step hidden" id="step3">
+    <h2>Auftragsnummern & Splits</h2>
+    <div class="info-box">
+      <strong>SAP-Nummer</strong> pro Auftrag eintragen, ggf. <strong>Splits</strong> wählen.
+      Jeder gewählte Split bekommt im nächsten Schritt eine eigene Zeile zur AE-Eingabe.
+    </div>
+    <div id="sap-container"></div>
+    <div class="button-row">
+      <div class="left"><button class="btn btn-secondary" onclick="showStep(2)">← Zurück</button></div>
+      <div class="right"><button class="btn" onclick="goToStep4()">Weiter →</button></div>
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step hidden" id="step4">
+    <div class="info-box">
+      <strong>Namen anpassen:</strong> Auftrags-Titel anklicken.
+      <strong>Reise/Rückzeit:</strong> über Schalter aktivieren.
+      <strong>Abzug:</strong> 30 min Anfahrt + 30 min Abfahrt + Pause (automatisch: 0 / 30 / 45 min je nach Arbeitszeit).
+      Plus ab 7:48h Tatsächlicher Arbeitszeit.
+    </div>
+    <div id="auftraege-container"></div>
+
+    <div class="summary" id="summary"></div>
+
+    <h3 class="section">Protokoll für Rückmeldung</h3>
+    <div class="protokoll" id="protokoll"></div>
+    <div class="button-row">
+      <div class="left"><button class="btn btn-secondary" onclick="showStep(3)">← Zurück</button></div>
+      <div class="right">
+        <button class="btn btn-outline" onclick="copyProtokoll()">Kopieren</button>
+        <button class="btn btn-outline" onclick="sendEmail()">Per E-Mail</button>
+        <button class="btn" onclick="window.print()">Als PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modal10h">
+  <div class="modal-card">
+    <div class="modal-title">⛔ 10 h Arbeitszeit überschritten</div>
+    <div class="modal-body">
+      <p>Aktuelle Arbeitszeit inkl. An-/Abfahrt: <strong id="modal10hValue">—</strong></p>
+      <p>Die gesetzliche Höchstarbeitszeit von <strong>10 Stunden</strong> ist erreicht/überschritten.
+      Eigentlich darf das nicht passieren!</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal10h(false)">Werte korrigieren</button>
+      <button class="btn" onclick="closeModal10h(true)">Verstanden, weiter</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (immer)
+  const SOLL_MIN = 468;          // 7h 48min
+  const AE48_MIN = 480;          // 48 AE = 480 min = 8h
+  const LIMIT10H_MIN = 600;      // 10h
+  const SPLIT_OPTIONS = [10, 11, 20, 29, 40, 50];
+  const STORAGE_KEY = 'arbeitszeit-state-v1';
+  const THEME_KEY = 'arbeitszeit-theme';
+
+  // Pause automatisch nach Arbeitszeit (= Brutto − 60 Anfahrt/Abfahrt − Pause):
+  //   < 6h Arbeit  → 0 min Pause
+  //   6h–9h Arbeit → 30 min Pause
+  //   > 9h Arbeit  → 45 min Pause
+  // Umgerechnet auf Brutto (= Arbeit + 60 + Pause):
+  //   Brutto < 7h     (< 420 min): keine Pause  (Arbeit < 6h)
+  //   Brutto ≤ 10:30h (≤ 630 min): 30 min Pause  (Arbeit ≤ 9h mit 30er Pause)
+  //   Brutto > 10:30h (> 630 min): 45 min Pause  (Arbeit > 9h)
+  function computePauseMin(bruttoMin) {
+    if (bruttoMin < 420) return 0;
+    if (bruttoMin <= 630) return 30;
+    return 45;
+  }
+  function computeAbzug(bruttoMin) {
+    const pauseMin = computePauseMin(bruttoMin);
+    return { abzugMin: FIX_ABZUG_MIN + pauseMin, pauseMin: pauseMin };
+  }
+
+  let state = {
+    bereitschaft: null,
+    anzahl: 3,
+    startzeit: "06:30",
+    sapNumbers: [],
+    auftraege: [],
+    tenHourAck: false
+  };
+  let currentStep = 1;
+
+  /* ===== LocalStorage ===== */
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        v: 1,
+        bereitschaft: state.bereitschaft,
+        anzahl: state.anzahl,
+        startzeit: state.startzeit,
+        sapNumbers: state.sapNumbers,
+        auftraege: state.auftraege,
+        tenHourAck: state.tenHourAck,
+        currentStep: currentStep,
+        savedAt: Date.now()
+      }));
+    } catch (e) {}
+  }
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const d = JSON.parse(raw);
+      if (typeof d !== 'object' || !d) return null;
+      if (d.bereitschaft !== undefined) state.bereitschaft = d.bereitschaft;
+      if (typeof d.anzahl === 'number') state.anzahl = d.anzahl;
+      if (typeof d.startzeit === 'string') state.startzeit = d.startzeit;
+      if (Array.isArray(d.sapNumbers)) state.sapNumbers = d.sapNumbers;
+      if (Array.isArray(d.auftraege)) state.auftraege = d.auftraege;
+      if (typeof d.tenHourAck === 'boolean') state.tenHourAck = d.tenHourAck;
+      return (d.currentStep >= 1 && d.currentStep <= 4) ? d.currentStep : 1;
+    } catch (e) { return null; }
+  }
+  function resetAll() {
+    if (!confirm('Alle gespeicherten Eingaben löschen und neu starten?')) return;
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    state = {
+      bereitschaft: null, anzahl: 3, startzeit: "06:30",
+      sapNumbers: [], auftraege: [], tenHourAck: false
+    };
+    document.getElementById('anzahl').value = 3;
+    document.getElementById('startzeit').value = "06:30";
+    document.getElementById('restored-banner').classList.add('hidden');
+    document.getElementById('modal10h').classList.add('hidden');
+    showStep(1);
+  }
+
+  /* ===== 10h Modal ===== */
+  function showModal10h(value) {
+    document.getElementById('modal10hValue').textContent = value;
+    document.getElementById('modal10h').classList.remove('hidden');
+  }
+  function closeModal10h(acknowledged) {
+    document.getElementById('modal10h').classList.add('hidden');
+    if (acknowledged) {
+      state.tenHourAck = true;
+      saveState();
+    }
+  }
+
+  /* ===== Theme ===== */
+  function applyTheme(theme) {
+    document.body.dataset.theme = theme;
+    const btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = theme === 'dark' ? 'Hell' : 'Dunkel';
+  }
+  function toggleTheme() {
+    const next = (document.body.dataset.theme === 'dark') ? 'light' : 'dark';
+    applyTheme(next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  }
+  function initTheme() {
+    let theme;
+    try { theme = localStorage.getItem(THEME_KEY); } catch (e) {}
+    if (!theme) theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    applyTheme(theme);
+  }
+
+  /* ===== Step Navigation ===== */
+  function showStep(n) {
+    currentStep = n;
+    for (let i = 1; i <= 4; i++) {
+      document.getElementById('step' + i).classList.toggle('hidden', i !== n);
+    }
+    document.getElementById('step-indicator').textContent = 'Schritt ' + n + ' / 4';
+    if (n === 1) refreshStep1();
+    if (n === 2) refreshStep2();
+    if (n === 3) renderSapInputs();
+    if (n === 4) renderAuftraege();
+    saveState();
+  }
+  function refreshStep1() {
+    document.getElementById('btn-nein').classList.toggle('active', state.bereitschaft === false);
+    document.getElementById('btn-ja').classList.toggle('active', state.bereitschaft === true);
+  }
+  function refreshStep2() {
+    document.getElementById('anzahl').value = state.anzahl;
+    document.getElementById('startzeit').value = state.startzeit;
+  }
+
+  function setBereitschaft(val) {
+    const changed = state.bereitschaft !== val;
+    state.bereitschaft = val;
+    if (changed) state.startzeit = val ? "09:00" : "06:30";
+    showStep(2);
+  }
+
+  function goToStep3() {
+    const anzahl = parseInt(document.getElementById('anzahl').value);
+    const startzeit = document.getElementById('startzeit').value;
+    if (!anzahl || anzahl < 1) { alert('Bitte gültige Anzahl eingeben.'); return; }
+    if (!startzeit) { alert('Bitte Startzeit eingeben.'); return; }
+    state.anzahl = anzahl;
+    state.startzeit = startzeit;
+    while (state.sapNumbers.length < anzahl) state.sapNumbers.push({ sap: '', splits: [] });
+    if (state.sapNumbers.length > anzahl) state.sapNumbers.length = anzahl;
+    if (state.auftraege.length > anzahl) state.auftraege.length = anzahl;
+    showStep(3);
+  }
+
+  function buildAutoName(sapEntry, i) {
+    let name = sapEntry.sap.trim();
+    if (!name) name = 'Auftrag ' + (i + 1);
+    if (sapEntry.splits.length > 0) name += '-' + [...sapEntry.splits].sort((a, b) => a - b).join('-');
+    return name;
+  }
+
+  function syncAuftraegeFromSap() {
+    const newAuftraege = state.sapNumbers.map((s, i) => {
+      const existing = state.auftraege[i];
+      const autoName = buildAutoName(s, i);
+      const splits = s.splits.length > 0 ? [...s.splits].sort((a, b) => a - b) : null;
+      let workEntries;
+      if (splits) {
+        workEntries = splits.map(sp => {
+          const prev = existing && existing.workEntries ? existing.workEntries.find(e => e.split === sp) : null;
+          return { split: sp, label: 'Split ' + sp, ae: prev ? prev.ae : 3 };
+        });
+      } else {
+        const prev = existing && existing.workEntries ? existing.workEntries[0] : null;
+        workEntries = [{ split: null, label: 'Arbeit', ae: prev ? prev.ae : 3 }];
+      }
+      let name;
+      if (!existing) name = autoName;
+      else if (existing.name === existing._lastAutoName) name = autoName;
+      else name = existing.name;
+      return {
+        name: name, _lastAutoName: autoName,
+        reiseAktiv: existing ? existing.reiseAktiv : (i === 0),
+        reiseAE: existing ? existing.reiseAE : 0,
+        rueckAktiv: existing ? existing.rueckAktiv : false,
+        rueckAE: existing ? existing.rueckAE : 0,
+        workEntries: workEntries
+      };
+    });
+    state.auftraege = newAuftraege;
+  }
+
+  function goToStep4() { syncAuftraegeFromSap(); showStep(4); }
+
+  function renderSapInputs() {
+    const container = document.getElementById('sap-container');
+    container.innerHTML = state.sapNumbers.map((s, i) => `
+      <div class="sap-card">
+        <div class="sap-card-title">Auftrag ${i + 1}</div>
+        <input type="text" placeholder="SAP-Nummer" value="${escapeHtml(s.sap)}"
+          oninput="onSapInput(${i}, this.value)">
+        <div class="splits-row">
+          <span class="splits-label">Splits:</span>
+          ${SPLIT_OPTIONS.map(v => `
+            <button type="button" class="split-btn ${s.splits.includes(v) ? 'active' : ''}"
+              onclick="toggleSplit(${i}, ${v}, this)">${v}</button>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+  function onSapInput(i, value) { state.sapNumbers[i].sap = value; saveState(); }
+  function toggleSplit(i, value, btn) {
+    const splits = state.sapNumbers[i].splits;
+    const idx = splits.indexOf(value);
+    if (idx >= 0) splits.splice(idx, 1);
+    else splits.push(value);
+    btn.classList.toggle('active');
+    saveState();
+  }
+
+  const aeToMinutes = ae => Math.round(ae * 10);
+  // Tageswechsel-bewusst: wickelt Minuten auf 0–24h um, hängt "+N" bei Folgetagen an
+  const minutesToHHMM = m => {
+    const wrapped = ((m % 1440) + 1440) % 1440;
+    const dayOffset = Math.floor(m / 1440);
+    const hhmm = String(Math.floor(wrapped / 60)).padStart(2, '0') + ':' + String(wrapped % 60).padStart(2, '0');
+    return dayOffset > 0 ? hhmm + ' +' + dayOffset : hhmm;
+  };
+  const parseStartMinutes = () => { const [h, m] = state.startzeit.split(':').map(Number); return h * 60 + m; };
+  const formatAE = ae => ae.toFixed(1).replace('.', ',');
+  const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmtDuration = m => Math.floor(Math.abs(m) / 60) + 'h ' + String(Math.abs(m) % 60).padStart(2, '0') + 'min';
+
+  function calcTimes() {
+    let current = parseStartMinutes();
+    const result = [];
+    for (let i = 0; i < state.auftraege.length; i++) {
+      const a = state.auftraege[i];
+      const reiseMin = a.reiseAktiv ? aeToMinutes(a.reiseAE) : 0;
+      const rueckMin = a.rueckAktiv ? aeToMinutes(a.rueckAE) : 0;
+      const reiseStart = current;
+      current += reiseMin;
+      const workStart = current;
+      const workTimes = a.workEntries.map(e => {
+        const start = current;
+        const min = aeToMinutes(e.ae);
+        current += min;
+        return { start, end: current, min };
+      });
+      const workEnd = current;
+      const rueckEnd = current + rueckMin;
+      result.push({ reiseStart, workStart, workTimes, workEnd, rueckStart: workEnd, rueckEnd, reiseMin, rueckMin });
+      current = rueckEnd;
+    }
+    return result;
+  }
+
+  function renderAuftraege() {
+    const container = document.getElementById('auftraege-container');
+    container.innerHTML = '';
+    const times = calcTimes();
+
+    state.auftraege.forEach((a, i) => {
+      const t = times[i];
+      const card = document.createElement('div');
+      card.className = 'auftrag-card';
+      const workStartStr = minutesToHHMM(t.workStart);
+      const workEndStr = minutesToHHMM(t.workEnd);
+      const rueckLabel = i < state.auftraege.length - 1 ? 'Rückzeit (zum nächsten)' : 'Rückzeit (Heimfahrt)';
+      const hasSplits = a.workEntries.length > 1 || (a.workEntries[0] && a.workEntries[0].split !== null);
+
+      const workRowsHtml = a.workEntries.map((e, idx) => {
+        const et = t.workTimes[idx];
+        const rowClass = hasSplits ? 'time-row split-row' : 'time-row';
+        const labelHtml = e.split !== null
+          ? `<span class="split-badge">${e.split}</span>Arbeit`
+          : 'Arbeitszeit';
+        return `
+          <div class="${rowClass}">
+            <label class="switch locked"><input type="checkbox" checked disabled><span class="slider"></span></label>
+            <div class="time-label">${labelHtml} <small>${minutesToHHMM(et.start)}–${minutesToHHMM(et.end)}</small></div>
+            <input type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?" class="ae-input" value="${formatAE(e.ae)}"
+              onchange="updateWorkAE(${i}, ${idx}, this.value)">
+            <div class="minutes-display">${et.min} min</div>
+          </div>
+        `;
+      }).join('');
+
+      card.innerHTML = `
+        <div class="auftrag-header">
+          <input type="text" class="auftrag-name" value="${escapeHtml(a.name)}"
+            placeholder="SAP-Nr. / Auftragsname" onchange="updateName(${i}, this.value)">
+          <div class="auftrag-times">Arbeit: <strong>${workStartStr}–${workEndStr}</strong></div>
+        </div>
+        <div class="time-row ${a.reiseAktiv ? '' : 'disabled'}">
+          <label class="switch">
+            <input type="checkbox" ${a.reiseAktiv ? 'checked' : ''} onchange="toggleReise(${i}, this.checked)">
+            <span class="slider"></span>
+          </label>
+          <div class="time-label">Reisezeit <small>${a.reiseAktiv ? minutesToHHMM(t.reiseStart) + '–' + minutesToHHMM(t.workStart) : '—'}</small></div>
+          <input type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?" class="ae-input" value="${formatAE(a.reiseAE)}"
+            ${a.reiseAktiv ? '' : 'disabled'} onchange="updateAE(${i}, 'reiseAE', this.value)">
+          <div class="minutes-display">${a.reiseAktiv ? aeToMinutes(a.reiseAE) + ' min' : '—'}</div>
+        </div>
+        ${workRowsHtml}
+        <div class="time-row ${a.rueckAktiv ? '' : 'disabled'}">
+          <label class="switch">
+            <input type="checkbox" ${a.rueckAktiv ? 'checked' : ''} onchange="toggleRueck(${i}, this.checked)">
+            <span class="slider"></span>
+          </label>
+          <div class="time-label">${rueckLabel} <small>${a.rueckAktiv ? minutesToHHMM(t.rueckStart) + '–' + minutesToHHMM(t.rueckEnd) : '—'}</small></div>
+          <input type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?" class="ae-input" value="${formatAE(a.rueckAE)}"
+            ${a.rueckAktiv ? '' : 'disabled'} onchange="updateAE(${i}, 'rueckAE', this.value)">
+          <div class="minutes-display">${a.rueckAktiv ? aeToMinutes(a.rueckAE) + ' min' : '—'}</div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+
+    renderSummary(times);
+    renderProtokoll(times);
+  }
+
+  function updateName(i, value) { state.auftraege[i].name = value.trim() || ('Auftrag ' + (i + 1)); renderAuftraege(); saveState(); }
+  function toggleReise(i, checked) {
+    state.auftraege[i].reiseAktiv = checked;
+    if (checked && state.auftraege[i].reiseAE === 0) state.auftraege[i].reiseAE = 0.5;
+    renderAuftraege(); saveState();
+  }
+  function toggleRueck(i, checked) {
+    state.auftraege[i].rueckAktiv = checked;
+    if (checked && state.auftraege[i].rueckAE === 0) state.auftraege[i].rueckAE = 0.5;
+    renderAuftraege(); saveState();
+  }
+  function updateAE(i, field, value) {
+    const v = parseFloat(String(value).replace(',', '.'));
+    state.auftraege[i][field] = isNaN(v) ? 0 : Math.max(0, Math.round(v * 10) / 10);
+    renderAuftraege(); saveState();
+  }
+  function updateWorkAE(i, idx, value) {
+    const v = parseFloat(String(value).replace(',', '.'));
+    state.auftraege[i].workEntries[idx].ae = isNaN(v) ? 0 : Math.max(0, Math.round(v * 10) / 10);
+    renderAuftraege(); saveState();
+  }
+
+  function calcTotals() {
+    let totalReise = 0, totalArbeit = 0, totalRueck = 0;
+    state.auftraege.forEach(a => {
+      if (a.reiseAktiv) totalReise += a.reiseAE;
+      a.workEntries.forEach(e => totalArbeit += e.ae);
+      if (a.rueckAktiv) totalRueck += a.rueckAE;
+    });
+    return { totalReise, totalArbeit, totalRueck, totalAE: totalReise + totalArbeit + totalRueck };
+  }
+
+  function renderSummary(times) {
+    const startMin = parseStartMinutes();
+    const endMin = times.length ? times[times.length - 1].rueckEnd : startMin;
+    const bruttoMin = endMin - startMin;
+    const { pauseMin } = computeAbzug(bruttoMin);
+    const nettoMin = Math.max(0, bruttoMin - 60 - pauseMin);
+
+    // 10h-Modal-Trigger weiterhin aktiv
+    const h10Check = nettoMin + 60;
+    const h10Over = h10Check - LIMIT10H_MIN;
+    if (h10Over > 0 && !state.tenHourAck) {
+      setTimeout(() => showModal10h(fmtDuration(h10Check)), 50);
+    } else if (h10Over <= 0 && state.tenHourAck) {
+      state.tenHourAck = false;
+      saveState();
+    }
+
+    const summary = document.getElementById('summary');
+    summary.className = 'summary';
+    summary.innerHTML = `
+      <span class="summary-label">Heute</span>
+      <span class="summary-times">${minutesToHHMM(startMin)}<span class="summary-arrow">→</span>${minutesToHHMM(endMin)}</span>
+      ${state.bereitschaft ? '<span class="summary-badge">Bereitschaft</span>' : '<span class="summary-badge" style="visibility:hidden">Bereitschaft</span>'}
+    `;
+  }
+
+  function buildProtokollGroups(times) {
+    return state.auftraege.map((a, i) => {
+      const t = times[i];
+      const name = a.name || ('Auftrag ' + (i + 1));
+      const lines = [];
+      if (a.reiseAktiv) lines.push({
+        time: minutesToHHMM(t.reiseStart) + '–' + minutesToHHMM(t.workStart),
+        text: 'Anfahrt (' + formatAE(a.reiseAE) + ' AE)'
+      });
+      a.workEntries.forEach((e, idx) => {
+        const et = t.workTimes[idx];
+        const splitLabel = e.split !== null ? 'Split ' + e.split + ' Arbeit' : 'Arbeit';
+        lines.push({
+          time: minutesToHHMM(et.start) + '–' + minutesToHHMM(et.end),
+          text: splitLabel + ' (' + formatAE(e.ae) + ' AE)'
+        });
+      });
+      if (a.rueckAktiv) {
+        const beschr = i < state.auftraege.length - 1
+          ? 'Fahrt zu ' + (state.auftraege[i + 1].name || 'Auftrag ' + (i + 2))
+          : 'Heimfahrt';
+        lines.push({
+          time: minutesToHHMM(t.rueckStart) + '–' + minutesToHHMM(t.rueckEnd),
+          text: beschr + ' (' + formatAE(a.rueckAE) + ' AE)'
+        });
+      }
+      return { name, lines };
+    });
+  }
+
+  function renderProtokoll(times) {
+    const groups = buildProtokollGroups(times);
+    const html = groups.map((g, idx) => {
+      const linesHtml = g.lines.map(l =>
+        `<div class="protokoll-line"><span class="protokoll-time">${l.time}</span><span class="protokoll-text">${escapeHtml(l.text)}</span></div>`
+      ).join('');
+      const sep = idx < groups.length - 1 ? '<hr class="protokoll-separator">' : '';
+      return `<div class="protokoll-group"><div class="protokoll-group-header">${escapeHtml(g.name)}</div>${linesHtml}</div>${sep}`;
+    }).join('');
+    document.getElementById('protokoll').innerHTML = html;
+  }
+
+  function buildPlainTextProtokoll() {
+    const times = calcTimes();
+    const groups = buildProtokollGroups(times);
+    const { totalReise, totalArbeit, totalRueck, totalAE } = calcTotals();
+    const startMin = parseStartMinutes();
+    const endMin = times.length ? times[times.length - 1].rueckEnd : startMin;
+    const bruttoMin = endMin - startMin;
+    const { pauseMin } = computeAbzug(bruttoMin);
+    const nettoMin = Math.max(0, bruttoMin - 60 - pauseMin);
+    const plusMin = nettoMin - SOLL_MIN;
+    const h10Check = nettoMin + 60;
+    const today = new Date().toLocaleDateString('de-DE');
+
+    const out = [];
+    out.push('Arbeitszeit-Protokoll ' + today);
+    out.push('====================================');
+    out.push('Start: ' + minutesToHHMM(startMin) + (state.bereitschaft ? '   (Bereitschaft)' : ''));
+    out.push('Ende:  ' + minutesToHHMM(endMin));
+    out.push('');
+    groups.forEach((g, idx) => {
+      out.push('▸ ' + g.name);
+      g.lines.forEach(l => out.push('   ' + l.time + '   ' + l.text));
+      if (idx < groups.length - 1) out.push('   ----------------------------------');
+    });
+    out.push('');
+    out.push('====================================');
+    out.push('  ARBEITSZEIT:  ' + fmtDuration(nettoMin) + '   /   Soll 7:48h');
+    if (plusMin === 0) out.push('               ✓ Soll genau erreicht');
+    else if (plusMin < 0) out.push('               −' + fmtDuration(-plusMin) + '  (noch bis Soll)');
+    else out.push('               +' + fmtDuration(plusMin) + '  Plus');
+    out.push('====================================');
+    out.push('');
+    out.push('Zeitraum:    ' + minutesToHHMM(startMin) + '–' + minutesToHHMM(endMin) + '   (Brutto ' + fmtDuration(bruttoMin) + ')');
+    out.push('Pause:       ' + pauseMin + ' min   (automatisch)');
+    out.push('10h-Limit:   ' + fmtDuration(h10Check) + ' / 10h 00min' + (h10Check > LIMIT10H_MIN ? '   ⛔ ÜBERSCHRITTEN' : '   (inkl. An-/Abfahrt)'));
+    out.push('');
+    out.push('AE-Werte für Rückmeldung');
+    out.push('------------------------------------');
+    out.push('Reisezeit:    ' + formatAE(totalReise).padStart(5) + ' AE');
+    out.push('Arbeit:       ' + formatAE(totalArbeit).padStart(5) + ' AE');
+    out.push('Rückzeit:     ' + formatAE(totalRueck).padStart(5) + ' AE');
+    out.push('---------------------');
+    out.push('Gesamt:       ' + formatAE(totalAE).padStart(5) + ' AE   (' + fmtDuration(aeToMinutes(totalAE)) + ')');
+    return out.join('\n');
+  }
+
+  function sendEmail() {
+    const today = new Date().toLocaleDateString('de-DE');
+    const subject = encodeURIComponent('Arbeitszeit-Protokoll ' + today);
+    const body = encodeURIComponent(buildPlainTextProtokoll());
+    window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
+  }
+
+  function copyProtokoll() {
+    const text = buildPlainTextProtokoll();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        () => showToast('Protokoll kopiert ✓'),
+        () => fallbackCopy(text)
+      );
+    } else { fallbackCopy(text); }
+  }
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); showToast('Protokoll kopiert ✓'); }
+    catch (e) { showToast('Kopieren fehlgeschlagen'); }
+    document.body.removeChild(ta);
+  }
+
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  /* ===== Init ===== */
+  initTheme();
+  const restoredStep = loadState();
+  if (restoredStep) {
+    document.getElementById('restored-banner').classList.remove('hidden');
+    showStep(restoredStep);
+  } else {
+    showStep(1);
+  }
+</script>
+</body>
+</html>
