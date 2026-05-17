@@ -276,13 +276,13 @@
 
   .form-row-pair {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 12px;
     margin-bottom: 12px;
   }
-  .form-row-pair .form-row { margin-bottom: 0; }
+  .form-row-pair .form-row { margin-bottom: 0; min-width: 0; }
   @media (max-width: 520px) {
-    .form-row-pair { grid-template-columns: 1fr; gap: 12px; }
+    .form-row-pair { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   }
 
   .date-info {
@@ -317,6 +317,8 @@
   label { display: block; font-weight: 600; margin-bottom: 4px; color: var(--text-strong); font-size: 13px; }
   input[type="number"], input[type="time"], input[type="text"], input[type="date"] {
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
     padding: 10px 13px;
     border: 1.5px solid var(--border-input);
     border-radius: 8px;
@@ -327,6 +329,7 @@
     transition: border-color 0.15s, box-shadow 0.15s, background 0.2s;
   }
   input[type="date"], input[type="time"] { font-variant-numeric: tabular-nums; }
+  #datum, #startzeit, #anzahl { text-align: center; }
   input:focus { outline: none; border-color: var(--db-red); box-shadow: 0 0 0 3px rgba(236,0,22,0.14); }
   body[data-theme="dark"] input:focus { box-shadow: 0 0 0 3px rgba(236,0,22,0.30); }
   body[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator,
@@ -1483,7 +1486,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.11.3';
+  const APP_VERSION = '1.11.4';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
