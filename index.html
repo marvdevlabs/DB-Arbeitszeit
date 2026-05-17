@@ -61,6 +61,64 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
   .hidden { display: none !important; }
+
+  /* ===== Retro / Cyberpunk Easter Egg (5× Theme-Toggle) ===== */
+  body.retro-mode {
+    --db-red: #FF1493;
+    --db-red-dark: #C71585;
+    --db-red-light: rgba(255,20,147,0.18);
+    --bg-page: #0a0a2e;
+    --bg-page-2: #1a0033;
+    --bg-container: #16093d;
+    --bg-card: #221050;
+    --bg-card-alt: #1a0a45;
+    --bg-input: #1a0a3e;
+    --bg-button-soft: #2a1050;
+    --text-main: #00FFCC;
+    --text-strong: #00FFFF;
+    --text-secondary: #FF66FF;
+    --text-muted: #9370DB;
+    --border: #5B009A;
+    --border-input: #FF00FF;
+    --border-light: #3a0066;
+    --info-bg: rgba(255,0,255,0.10);
+    --info-text: #00FFCC;
+    --switch-off: #4B0082;
+  }
+  body.retro-mode header {
+    background: linear-gradient(135deg, #FF1493 0%, #00FFFF 50%, #FF00FF 100%) !important;
+  }
+  body.retro-mode header h1, body.retro-mode header .sub {
+    text-shadow: 0 0 6px rgba(0,0,0,0.5);
+  }
+  body.retro-mode .btn {
+    box-shadow: 0 0 16px rgba(255,20,147,0.55), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+  }
+  body.retro-mode .summary {
+    background: linear-gradient(135deg, #221050 0%, #16093d 100%) !important;
+    box-shadow: 0 0 20px rgba(0,255,255,0.20) !important;
+  }
+  body.retro-mode .summary-times {
+    color: #00FFFF !important;
+    text-shadow: 0 0 8px #00FFFF;
+  }
+  body.retro-mode h2, body.retro-mode .summary-row.emphasized {
+    text-shadow: 0 0 4px currentColor;
+  }
+  body.retro-mode .protokoll {
+    background: linear-gradient(180deg, #0a0a2e 0%, #050015 100%) !important;
+    box-shadow: 0 0 12px rgba(255,0,255,0.20) !important;
+  }
+  body.retro-mode .protokoll-group-header {
+    color: #00FFFF !important;
+    text-shadow: 0 0 6px #00FFFF;
+  }
+  body.retro-mode .protokoll-time { color: #FF66FF !important; }
+  body.retro-mode .container, body.retro-mode .auftrag-card, body.retro-mode .sap-card,
+  body.retro-mode .summary, body.retro-mode .modal-card, body.retro-mode .info-box,
+  body.retro-mode input, body.retro-mode select, body.retro-mode .btn {
+    transition: background 0.4s, color 0.4s, border-color 0.4s, box-shadow 0.4s;
+  }
   body {
     --pad: 12px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
@@ -1280,7 +1338,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.5.0';
+  const APP_VERSION = '1.6.0';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -1766,10 +1824,29 @@
     const btn = document.getElementById('themeBtn');
     if (btn) btn.title = theme === 'dark' ? 'Heller Modus' : 'Dunkler Modus';
   }
+  let themeClickCount = 0;
+  let themeClickTimer = null;
   function toggleTheme() {
+    themeClickCount++;
+    clearTimeout(themeClickTimer);
+    if (themeClickCount >= 5) {
+      themeClickCount = 0;
+      activateRetroMode();
+    } else {
+      themeClickTimer = setTimeout(() => themeClickCount = 0, 1800);
+    }
     const next = (document.body.dataset.theme === 'dark') ? 'light' : 'dark';
     applyTheme(next);
     try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  }
+  function activateRetroMode() {
+    if (document.body.classList.contains('retro-mode')) return;
+    document.body.classList.add('retro-mode');
+    showToast('Cyberpunk-Schichtbuch aktiviert · 10 s');
+    setTimeout(() => {
+      document.body.classList.remove('retro-mode');
+      showToast('Zurück in die Schicht');
+    }, 10000);
   }
   function initTheme() {
     let theme;
