@@ -281,7 +281,7 @@
     margin-bottom: 12px;
   }
   .form-row-pair .form-row { margin-bottom: 0; }
-  @media (max-width: 420px) {
+  @media (max-width: 520px) {
     .form-row-pair { grid-template-columns: 1fr; gap: 12px; }
   }
 
@@ -561,10 +561,13 @@
   .summary-top {
     display: flex;
     align-items: center;
-    gap: 14px;
+    flex-wrap: wrap;
+    column-gap: 12px;
+    row-gap: 6px;
     padding-bottom: 10px;
     border-bottom: 1px solid rgba(255,255,255,0.14);
   }
+  .summary-top .summary-times { flex-shrink: 0; }
   body[data-theme="dark"] .summary {
     background: linear-gradient(135deg, #2A2B2F 0%, #1F2024 100%);
     box-shadow:
@@ -1480,7 +1483,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.11.2';
+  const APP_VERSION = '1.11.3';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
