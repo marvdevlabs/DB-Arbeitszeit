@@ -367,8 +367,12 @@
     box-shadow: none;
   }
   .btn-outline:hover { background: var(--db-red); color: #fff; box-shadow: 0 4px 14px rgba(236,0,22,0.25); }
-  .button-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; justify-content: space-between; }
-  .button-row .left, .button-row .right { display: flex; gap: 8px; flex-wrap: wrap; }
+  .button-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; justify-content: space-between; align-items: center; }
+  .button-row .left, .button-row .right, .button-row .center { display: flex; gap: 8px; flex-wrap: wrap; }
+  .button-row .center { justify-content: center; }
+  .button-row:has(.center) .left, .button-row:has(.center) .right { flex: 1; }
+  .button-row:has(.center) .left { justify-content: flex-start; }
+  .button-row:has(.center) .right { justify-content: flex-end; }
 
   .info-box {
     background: rgba(96, 125, 165, 0.07);
@@ -1312,11 +1316,11 @@
     <div class="protokoll" id="protokoll"></div>
     <div class="button-row">
       <div class="left"><button class="btn btn-secondary" onclick="showStep(4)">← Zurück</button></div>
-      <div class="right">
+      <div class="center">
         <button class="btn" onclick="copyProtokoll()">Kopieren</button>
         <button class="btn" onclick="window.print()">Drucken</button>
-        <button class="btn btn-secondary" onclick="openResetModal()">Neuer Tag</button>
       </div>
+      <div class="right"><button class="btn btn-secondary" onclick="openResetModal()">Neuer Tag</button></div>
     </div>
   </div>
 </div>
@@ -1494,7 +1498,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.11.6';
+  const APP_VERSION = '1.11.7';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
