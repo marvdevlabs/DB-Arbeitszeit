@@ -2,7 +2,7 @@
 
 Single-File-Webapp zum Erfassen und Berechnen der täglichen Arbeitszeit (1 AE = 10 min, Sollarbeitszeit 7:48h). Mobile-first, offline-fähig, keine Server-Komponente.
 
-**Version:** 1.1.0 · **Live:** [blackpolo91.github.io/DB-Arbeitszeit](https://blackpolo91.github.io/DB-Arbeitszeit/)
+**Version:** 1.1.1 · **Live:** [marvdevlabs.github.io/DB-Arbeitszeit](https://marvdevlabs.github.io/DB-Arbeitszeit/)
 
 <p align="center">
   <img src="docs/screenshots/06-step5-full.png" alt="Arbeitszeit-Rechner – Übersicht" width="380">
@@ -142,7 +142,7 @@ Klick auf einen Eintrag zeigt das vollständige Klartext-Protokoll des Tages —
 ### Lokal entwickeln
 
 ```bash
-git clone https://github.com/BlackPolo91/DB-Arbeitszeit.git
+git clone https://github.com/marvdevlabs/DB-Arbeitszeit.git
 cd DB-Arbeitszeit
 python3 -m http.server 8000
 # Browser: http://localhost:8000
