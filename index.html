@@ -1498,7 +1498,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.11.8';
+  const APP_VERSION = '1.11.9';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -2504,6 +2504,12 @@
     const h10Check = nettoMin + fixAbzug;
     const h10Over = h10Check - LIMIT10H_MIN;
 
+    const dateObj = parseLocalDate(state.date);
+    const dateLabel = WEEKDAYS_SHORT[dateObj.getDay()] + ', ' + formatDateDE(state.date);
+    const holiday = getHolidayName(state.date, state.bundesland);
+    const weekend = isWeekend(state.date);
+    const isNonRegularDay = weekend || !!holiday;
+
     if (h10Over > 0 && !state.tenHourAck) {
       setTimeout(() => showModal10h(fmtDuration(h10Check)), 50);
     } else if (h10Over <= 0 && state.tenHourAck) {
@@ -2528,6 +2534,7 @@
       if (h10Over > 30) { liveStatus = '⛔ 10h-Grenze überschritten'; liveStatusAttr = 'over-danger'; }
       else if (h10Over > 0) { liveStatus = '⚠ 10h-Grenze überschritten'; liveStatusAttr = 'over-warn'; }
       else if (fixAbzug === 0) { liveStatus = 'Bereitschaft · auftragsbasiert'; }
+      else if (isNonRegularDay) { liveStatus = holiday || 'Wochenende'; }
       else if (plusMin === 0 && nettoMin > 0) { liveStatus = '✓ Soll erreicht'; liveStatusAttr = 'met'; }
       else if (plusMin > 0) { liveStatus = '+' + fmtDuration(plusMin) + ' Plus'; liveStatusAttr = 'plus'; }
       else { liveStatus = 'noch −' + fmtDuration(-plusMin) + ' bis Soll'; }
@@ -2536,10 +2543,6 @@
       else headerSub.removeAttribute('data-status');
     }
 
-    const dateObj = parseLocalDate(state.date);
-    const dateLabel = WEEKDAYS_SHORT[dateObj.getDay()] + ', ' + formatDateDE(state.date);
-    const holiday = getHolidayName(state.date, state.bundesland);
-    const weekend = isWeekend(state.date);
     const abzugLabel = fixAbzug === 0
       ? 'Pause (auto)'
       : 'An-/Abfahrt + Pause';
@@ -2574,7 +2577,7 @@
           <div class="summary-row"><span>Rück</span><span>${formatAE(totalRueck)} AE</span></div>
           <div class="summary-row emphasized"><span>Gesamt</span><span>${formatAE(totalAE)} AE</span></div>
         </div>
-        ${fixAbzug === 0 ? '' : `<div class="summary-soll ${sollClass}">
+        ${isNonRegularDay ? '' : `<div class="summary-soll ${sollClass}">
           <span>Soll-Vergleich · 7:48h<span class="info-wrapper"><span class="info-icon" onclick="toggleInfo(this, event)">i</span><span class="info-tooltip">Tarifliche Sollarbeitszeit: <strong>7 h 48 min netto</strong> pro Tag — also ohne Anfahrt/Abfahrt und ohne Pause. Plus-Stunden zählen ab Überschreitung.</span></span></span>
           <span>${sollText}</span>
         </div>`}
@@ -2660,8 +2663,12 @@
     });
     out.push('');
     out.push('====================================');
+    const isNonRegularDay = isWeekend(state.date) || !!holiday;
     if (fixAbzug === 0) {
       out.push('  ARBEITSZEIT:  ' + fmtDuration(nettoMin) + '   (Bereitschaft · auftragsbasiert)');
+    } else if (isNonRegularDay) {
+      const dayLabel = holiday || 'Wochenende';
+      out.push('  ARBEITSZEIT:  ' + fmtDuration(nettoMin) + '   (' + dayLabel + ' · kein Soll)');
     } else {
       out.push('  ARBEITSZEIT:  ' + fmtDuration(nettoMin) + '   /   Soll 7:48h');
       if (plusMin === 0) out.push('               ✓ Soll genau erreicht');
