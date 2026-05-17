@@ -60,17 +60,18 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  .hidden { display: none !important; }
   body {
+    --pad: 12px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
     background: radial-gradient(ellipse at top, var(--bg-page) 0%, var(--bg-page-2) 100%);
     background-attachment: fixed;
     color: var(--text-main);
     min-height: 100vh;
-    padding: 12px;
-    padding-top: max(12px, env(safe-area-inset-top));
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-    padding-left: max(12px, env(safe-area-inset-left));
-    padding-right: max(12px, env(safe-area-inset-right));
+    padding: max(var(--pad), env(safe-area-inset-top))
+             max(var(--pad), env(safe-area-inset-right))
+             max(var(--pad), env(safe-area-inset-bottom))
+             max(var(--pad), env(safe-area-inset-left));
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
@@ -821,6 +822,21 @@
     border: none;
   }
 
+  .app-footer {
+    text-align: center;
+    margin: 16px auto 4px;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
+  }
+  .app-footer a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .app-footer a:hover { color: var(--db-red); }
+  .app-footer .sep { margin: 0 6px; opacity: 0.5; }
+
   .toast {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
     background: var(--db-gray); color: #fff;
@@ -834,7 +850,7 @@
 
   /* ===== Responsive ===== */
   @media (max-width: 720px) {
-    body { padding: 8px; font-size: 13.5px; }
+    body { --pad: 8px; font-size: 13.5px; }
     .container { border-radius: 6px; }
     header { padding: 12px 16px; }
     header h1 { font-size: 17px; }
@@ -848,7 +864,7 @@
     .restored-banner { margin: 12px 16px 0; }
   }
   @media (max-width: 520px) {
-    body { padding: 4px; }
+    body { --pad: 4px; }
     .container { border-radius: 6px; }
     header { padding: 12px 14px; }
     header h1 { font-size: 16px; }
@@ -899,7 +915,7 @@
     .info-box, .button-row,
     #step1, #step2, #step3, #step4,
     .switch, .minutes-display,
-    .info-wrapper,
+    .info-wrapper, .app-footer,
     .toast { display: none !important; }
 
     .step { padding: 4mm 6mm; }
@@ -1169,9 +1185,16 @@
   </div>
 </div>
 
+<div class="app-footer">
+  <span id="appVersion">v–</span>
+  <span class="sep">·</span>
+  <a href="https://github.com/BlackPolo91/DB-Arbeitszeit" target="_blank" rel="noopener">GitHub</a>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
+  const APP_VERSION = '1.0.0';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -2086,6 +2109,7 @@
   }
 
   /* ===== Init ===== */
+  document.getElementById('appVersion').textContent = 'v' + APP_VERSION;
   initTheme();
   initBundeslandSelect();
   const restoredStep = loadState();
