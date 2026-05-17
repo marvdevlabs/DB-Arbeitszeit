@@ -188,7 +188,12 @@
   }
   header > * { position: relative; z-index: 1; }
   header h1 { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; }
-  header .sub { font-size: 12px; opacity: 0.92; margin-top: 2px; }
+  header .sub { font-size: 12px; opacity: 0.92; margin-top: 2px; min-height: 14px; transition: color 0.2s; }
+  header .sub:empty { margin-top: 0; min-height: 0; }
+  header .sub[data-status="met"] { color: #C8E6C9; opacity: 1; font-weight: 600; }
+  header .sub[data-status="plus"] { color: #FFE0B2; opacity: 1; font-weight: 600; }
+  header .sub[data-status="over-warn"] { color: #FFD180; opacity: 1; font-weight: 700; }
+  header .sub[data-status="over-danger"] { color: #FFCDD2; opacity: 1; font-weight: 700; text-shadow: 0 0 6px rgba(0,0,0,0.3); }
   .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
   .theme-toggle {
     background: rgba(0,0,0,0.22); color: #fff; border: none;
@@ -1170,7 +1175,7 @@
   <header>
     <div>
       <h1>Arbeitszeit-Rechner</h1>
-      <div class="sub">1 AE = 10 Minuten · Soll 7:48h Arbeitszeit (ohne Anfahrt/Abfahrt/Pause)</div>
+      <div class="sub" id="header-sub"></div>
     </div>
     <div class="header-right">
       <button class="header-bundesland hidden" id="headerBundesland" onclick="showStep(1)" title="Bundesland ändern" aria-label="Bundesland ändern">
@@ -1432,7 +1437,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.8.1';
+  const APP_VERSION = '1.9.0';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -2087,6 +2092,11 @@
       d.classList.toggle('current', step === n);
       d.classList.toggle('done', step < n);
     });
+    const headerSub = document.getElementById('header-sub');
+    if (n !== 5 && headerSub) {
+      headerSub.textContent = '';
+      headerSub.removeAttribute('data-status');
+    }
     if (n === 1) refreshStep1();
     if (n === 2) refreshStep2();
     if (n === 3) refreshStep3();
@@ -2441,6 +2451,20 @@
     if (h10Over > 30) limitClass = 'over-danger';
     else if (h10Over > 0) limitClass = 'over-warn';
     const limitText = fmtDuration(h10Check) + ' / 10:00h' + (h10Over > 0 ? '  überschritten' : '');
+
+    // Live-Schicht-Status im Header (nur in Step 5)
+    const headerSub = document.getElementById('header-sub');
+    if (headerSub && currentStep === 5) {
+      let liveStatus, liveStatusAttr = '';
+      if (h10Over > 30) { liveStatus = '⛔ 10h-Grenze überschritten'; liveStatusAttr = 'over-danger'; }
+      else if (h10Over > 0) { liveStatus = '⚠ 10h-Grenze überschritten'; liveStatusAttr = 'over-warn'; }
+      else if (plusMin === 0 && nettoMin > 0) { liveStatus = '✓ Soll erreicht'; liveStatusAttr = 'met'; }
+      else if (plusMin > 0) { liveStatus = '+' + fmtDuration(plusMin) + ' Plus'; liveStatusAttr = 'plus'; }
+      else { liveStatus = 'noch −' + fmtDuration(-plusMin) + ' bis Soll'; }
+      headerSub.textContent = 'Heute · ' + fmtDuration(nettoMin) + ' · ' + liveStatus;
+      if (liveStatusAttr) headerSub.setAttribute('data-status', liveStatusAttr);
+      else headerSub.removeAttribute('data-status');
+    }
 
     const dateObj = parseLocalDate(state.date);
     const dateLabel = WEEKDAYS_SHORT[dateObj.getDay()] + ', ' + formatDateDE(state.date);
