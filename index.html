@@ -10,6 +10,10 @@
 <meta name="theme-color" content="#EC0016" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#131316" media="(prefers-color-scheme: dark)">
 <meta name="format-detection" content="telephone=no">
+<meta name="description" content="Persönliches Arbeitszeit-Hilfsmittel zum Erfassen von AE-Werten. Open-Source-Projekt von @marvdevlabs. Kein offizielles Tool der Deutschen Bahn AG.">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer-when-downgrade">
+<meta name="author" content="marvdevlabs">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23EC0016'/%3E%3Ctext x='50' y='70' font-family='-apple-system,Helvetica,Arial,sans-serif' font-size='52' font-weight='700' fill='%23fff' text-anchor='middle'%3EAZ%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23EC0016'/%3E%3Ctext x='50' y='70' font-family='-apple-system,Helvetica,Arial,sans-serif' font-size='52' font-weight='700' fill='%23fff' text-anchor='middle'%3EAZ%3C/text%3E%3C/svg%3E">
 <title>Arbeitszeit-Rechner</title>
@@ -694,6 +698,63 @@
     from { opacity: 0; transform: translateY(8px) scale(0.98); }
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
+
+  /* ===== Spruch-Modal Special Styling ===== */
+  .modal-spruch-card {
+    position: relative;
+    overflow: hidden;
+    padding-top: 28px;
+  }
+  .spruch-quote-glyph {
+    position: absolute;
+    top: -28px;
+    left: 8px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 140px;
+    font-weight: 700;
+    color: var(--db-red);
+    opacity: 0.10;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+  }
+  .spruch-title {
+    position: relative;
+    z-index: 1;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--db-red);
+    margin-bottom: 18px;
+  }
+  .spruch-body {
+    position: relative;
+    z-index: 1;
+    padding: 8px 4px 4px;
+    text-align: center;
+  }
+  .spruch-text {
+    font-size: 18px;
+    line-height: 1.5;
+    font-weight: 600;
+    color: var(--text-strong);
+    padding: 0 8px;
+    transition: opacity 0.18s ease;
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .spruch-attribution {
+    margin-top: 20px;
+    font-size: 11px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 700;
+  }
+  body[data-theme="dark"] .spruch-quote-glyph { opacity: 0.14; }
   .modal-title {
     font-size: 18px; font-weight: 700;
     color: var(--db-red);
@@ -1317,13 +1378,15 @@
 </div>
 
 <div class="modal-overlay hidden" id="modalSpruch">
-  <div class="modal-card">
-    <div class="modal-title">Bahn-Wisdom</div>
-    <div class="modal-body">
-      <p id="spruchText" style="font-size:15px;line-height:1.6;font-style:italic;color:var(--text-main);">—</p>
+  <div class="modal-card modal-spruch-card">
+    <div class="spruch-quote-glyph" aria-hidden="true">&ldquo;</div>
+    <div class="modal-title spruch-title">Bahn-Wisdom</div>
+    <div class="modal-body spruch-body">
+      <p class="spruch-text" id="spruchText">—</p>
+      <div class="spruch-attribution">— Deutsche Bahn</div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="showRandomSpruch()">Nochmal</button>
+      <button class="btn btn-outline" onclick="showRandomSpruch()">Neuer Spruch</button>
       <button class="btn" onclick="closeSpruchModal()">Schließen</button>
     </div>
   </div>
@@ -1338,7 +1401,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.6.1';
+  const APP_VERSION = '1.7.0';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -1725,26 +1788,56 @@
 
   /* ===== Bahn-Wisdom (Version-Tap × 3) ===== */
   const BAHN_SPRUCHE = [
-    'Reisen mit Aussicht — Fensterplatz inklusive.',
-    'Pünktlichkeit ist eine Frage der Perspektive.',
-    '33.000 km Schienen — und alle wollen den Fensterplatz.',
-    'Im Bordbistro kostet die Brezel mehr als der Kaffee. Wir wissen es.',
-    'Pannenfrei seit gefühlt heute Morgen.',
-    'Wer im ICE arbeitet, hat den schönsten Schreibtisch der Republik.',
-    'Verspätung als Geschenk: zehn Minuten mehr Lesezeit.',
-    'Bahnfahren: stau-frei seit 1835.',
-    'Heute wieder pünktlich. Selbst überrascht.',
-    'Im Zug entstehen die besten Ideen. Und manchmal Romane.',
-    'Wartung läuft. Brezel auch.',
-    'DB Navigator: dein bester Freund. Auch wenn er manchmal flunkert.',
-    'Manche Bahnhöfe sind so schön, man möchte gar nicht weiter.',
-    'Schienenersatzverkehr: wo das Abenteuer anfängt.',
-    'WLAN funktioniert. Wir wundern uns auch.',
-    'Wir sind nicht perfekt. Aber wir bringen euch hin.',
-    'Ankunftsgleis: 5. Wahrscheinlichkeit: variabel.',
-    'Bahnfahren ist wie Lesen: hinsetzen, abschalten, ankommen.',
-    'Sechs Stunden ICE, eine Brezel, drei gute Geschichten.',
-    'Wenn der Zug pünktlich ist, fühlt sich das fast magisch an.'
+    'Deutsche Bahn – wir bringen dich hin. Irgendwann.',
+    'Pünktlich wie die Bahn: ein flexibler Begriff.',
+    'Unsere Züge fahren nach Plan. Manchmal sogar nach Fahrplan.',
+    'Deutsche Bahn – Abenteuer beginnt am Gleis.',
+    'Wir entschleunigen Deutschland.',
+    'Heute schon gewartet?',
+    'DB – Der Weg ist das Ziel. Weil das Ziel später kommt.',
+    'Unsere Verspätung hat Anschluss.',
+    'Bahnfahren: Wellness für Geduldige.',
+    'Wir fahren nicht zu spät, wir geben dir mehr Reisezeit.',
+    'Deutsche Bahn – kostenloses Zeitmanagement-Training inklusive.',
+    'Einsteigen, zurücklehnen, improvisieren.',
+    'Unsere App weiß auch nicht alles. Aber sie tut so.',
+    'Wir verbinden Menschen. Besonders am Ersatzbus.',
+    'Bahnfahren ist wie Lotto. Nur mit Gleisen.',
+    'Planänderung? Wir nennen es Spannung.',
+    'Deutsche Bahn – jeder Tag ein neues Konzept.',
+    'Bei uns lernst du Orte kennen, an denen du nie aussteigen wolltest.',
+    'Wir schaffen Erinnerungen. Meistens am Bahnsteig.',
+    'Pünktlichkeit ist schön. Überraschungen aber auch.',
+    'DB – manchmal schneller als laufen.',
+    'Unsere Klimaanlage funktioniert. Entweder als Sauna oder Kühlschrank.',
+    'Deutsche Bahn – weil Geduld auch ein Ziel ist.',
+    'Wir fahren grün. Vor allem bei der Ampel nicht weiter.',
+    'Der Zug fällt nicht aus. Er nimmt sich frei.',
+    'Mit uns kommst du runter. Spätestens beim Blick auf die Anzeige.',
+    'Bahnfahren: Für alle, die gerne spontan bleiben.',
+    'Wir machen aus Pendlern Philosophen.',
+    'Deutsche Bahn – du kommst als Fahrgast und gehst als Problemlöser.',
+    'Unsere Durchsagen sind wie Poesie. Man versteht nicht alles, aber es berührt.',
+    'Wir halten Deutschland in Bewegung. Also meistens die Beine auf dem Bahnsteig.',
+    'DB – Deutschlands größter Geduldstest.',
+    'Der Anschluss wartet nicht. Aber du schon.',
+    'Heute ohne Störung? Wir arbeiten dran.',
+    'Wir bringen dich näher an fremde Menschen. Besonders im überfüllten Wagen.',
+    'Bahnfahren ist nachhaltig: Deine Pläne halten länger.',
+    'Unsere Verspätungen sind teamfähig – sie treten selten allein auf.',
+    'Deutsche Bahn – weil jeder Umstieg eine Charakterprüfung ist.',
+    'Wir nennen es nicht Chaos. Wir nennen es dynamische Reisegestaltung.',
+    'Reisen mit der Bahn: Du weißt nie, ob du ankommst, aber du hast was zu erzählen.',
+    'Bei uns ist jeder Fahrplan eine Empfehlung.',
+    'Deutsche Bahn – pünktlich im Herzen.',
+    'Wir bieten mehr als Transport: Spannung, Drama und gelegentlich Sitzplätze.',
+    'Unser Servicegedanke: Erst mal gucken.',
+    'DB – damit du deine Stadt mal wieder vom Bahnsteig aus siehst.',
+    'Unsere Züge sind wie gute Freunde: manchmal da, manchmal nicht erreichbar.',
+    'Deutsche Bahn – für Menschen, die auch Plan B lieben. Und C. Und SEV.',
+    'Wir machen Reisen wieder aufregend. Auch nach Hamm.',
+    'Mit uns beginnt der Urlaub schon beim Warten.',
+    'Deutsche Bahn – wir sind nicht perfekt, aber immerhin elektrifiziert.'
   ];
 
   let versionClickCount = 0;
@@ -1759,10 +1852,30 @@
       versionClickTimer = setTimeout(() => versionClickCount = 0, 1500);
     }
   }
+  let lastSpruchIdx = -1;
+  function pickSpruchIndex() {
+    if (BAHN_SPRUCHE.length <= 1) return 0;
+    let idx;
+    do { idx = Math.floor(Math.random() * BAHN_SPRUCHE.length); } while (idx === lastSpruchIdx);
+    lastSpruchIdx = idx;
+    return idx;
+  }
   function showRandomSpruch() {
-    const spruch = BAHN_SPRUCHE[Math.floor(Math.random() * BAHN_SPRUCHE.length)];
-    document.getElementById('spruchText').textContent = spruch;
-    document.getElementById('modalSpruch').classList.remove('hidden');
+    const idx = pickSpruchIndex();
+    const el = document.getElementById('spruchText');
+    const modal = document.getElementById('modalSpruch');
+    const wasOpen = !modal.classList.contains('hidden');
+    if (wasOpen) {
+      el.style.opacity = '0';
+      setTimeout(() => {
+        el.textContent = BAHN_SPRUCHE[idx];
+        el.style.opacity = '1';
+      }, 180);
+    } else {
+      el.textContent = BAHN_SPRUCHE[idx];
+      el.style.opacity = '1';
+      modal.classList.remove('hidden');
+    }
   }
   function closeSpruchModal() {
     document.getElementById('modalSpruch').classList.add('hidden');
