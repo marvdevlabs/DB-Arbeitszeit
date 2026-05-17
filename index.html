@@ -383,15 +383,18 @@
   .button-row .left, .button-row .right { display: flex; gap: 8px; flex-wrap: wrap; }
 
   .info-box {
-    background: var(--bg-card-alt);
-    border-left: 3px solid var(--db-red);
-    padding: 10px 14px;
-    border-radius: 6px;
+    background: rgba(96, 125, 165, 0.07);
+    border: 1px solid rgba(96, 125, 165, 0.14);
+    border-radius: 8px;
+    padding: 11px 14px;
     margin-bottom: 14px;
     font-size: 12.5px; line-height: 1.55;
     color: var(--text-secondary);
   }
-  body[data-theme="dark"] .info-box { background: rgba(255,255,255,0.04); }
+  body[data-theme="dark"] .info-box {
+    background: rgba(148, 163, 184, 0.08);
+    border-color: rgba(148, 163, 184, 0.18);
+  }
 
   .choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
   .choice-btn {
@@ -1437,7 +1440,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.9.0';
+  const APP_VERSION = '1.9.1';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
