@@ -16,6 +16,7 @@
 <meta name="author" content="marvdevlabs">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23EC0016'/%3E%3Ctext x='50' y='70' font-family='-apple-system,Helvetica,Arial,sans-serif' font-size='52' font-weight='700' fill='%23fff' text-anchor='middle'%3EAZ%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23EC0016'/%3E%3Ctext x='50' y='70' font-family='-apple-system,Helvetica,Arial,sans-serif' font-size='52' font-weight='700' fill='%23fff' text-anchor='middle'%3EAZ%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.json">
 <title>Arbeitszeit-Rechner</title>
 <style>
   :root {
@@ -1178,6 +1179,9 @@
       <button class="theme-toggle" id="historyBtn" onclick="openHistoryModal()" title="Verlauf" aria-label="Verlauf">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
       </button>
+      <button class="theme-toggle" id="backupBtn" onclick="openBackupModal()" title="Daten-Sicherung" aria-label="Daten-Sicherung">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      </button>
       <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Theme wechseln" aria-label="Theme wechseln">
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -1384,6 +1388,23 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="modalBackup">
+  <div class="modal-card">
+    <div class="modal-title">Daten-Sicherung</div>
+    <div class="modal-body">
+      <p>Alle App-Daten (aktueller Tag, Verlauf, Bundesland, Theme) als JSON-Datei sichern oder eine vorherige Sicherung einspielen.</p>
+      <p style="color:var(--text-muted);font-size:13px;margin-top:8px;">Tipp: Beim Wechsel auf ein neues Gerät zuerst <strong>Herunterladen</strong>, dann auf dem neuen Gerät <strong>Hochladen</strong>.</p>
+      <p style="color:var(--text-muted);font-size:12px;margin-top:8px;">⚠ Beim Hochladen werden alle aktuellen Daten ersetzt.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">Hochladen</button>
+      <button class="btn btn-outline" onclick="exportData()">Herunterladen</button>
+      <button class="btn btn-secondary" onclick="closeBackupModal()">Schließen</button>
+      <input type="file" id="importFile" accept="application/json,.json" style="display:none" onchange="importData(this.files[0]); this.value='';">
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="modalSpruch">
   <div class="modal-card modal-spruch-card">
     <div class="spruch-quote-glyph" aria-hidden="true">&ldquo;</div>
@@ -1411,7 +1432,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.7.2';
+  const APP_VERSION = '1.8.0';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -1794,6 +1815,80 @@
         () => fallbackCopy(text)
       );
     } else { fallbackCopy(text); }
+  }
+
+  /* ===== Backup / Restore ===== */
+  function openBackupModal() {
+    document.getElementById('modalBackup').classList.remove('hidden');
+  }
+  function closeBackupModal() {
+    document.getElementById('modalBackup').classList.add('hidden');
+  }
+  function exportData() {
+    const data = {
+      app: 'arbeitszeit',
+      version: APP_VERSION,
+      exportedAt: new Date().toISOString(),
+      state: {
+        bundesland: state.bundesland,
+        date: state.date,
+        bereitschaft: state.bereitschaft,
+        anzahl: state.anzahl,
+        startzeit: state.startzeit,
+        sapNumbers: state.sapNumbers,
+        auftraege: state.auftraege,
+        tenHourAck: !!state.tenHourAck
+      },
+      history: loadHistory(),
+      theme: document.body.dataset.theme || 'light'
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'arbeitszeit-backup-' + todayISO() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Backup heruntergeladen');
+  }
+  function importData(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (typeof data !== 'object' || !data) throw new Error('Invalid');
+        if (data.state && typeof data.state === 'object') {
+          if (typeof data.state.bundesland === 'string') state.bundesland = data.state.bundesland;
+          if (typeof data.state.date === 'string') state.date = data.state.date;
+          if (typeof data.state.bereitschaft === 'boolean' || data.state.bereitschaft === null) state.bereitschaft = data.state.bereitschaft;
+          if (typeof data.state.anzahl === 'number') state.anzahl = data.state.anzahl;
+          if (typeof data.state.startzeit === 'string') state.startzeit = data.state.startzeit;
+          if (Array.isArray(data.state.sapNumbers)) state.sapNumbers = data.state.sapNumbers;
+          if (Array.isArray(data.state.auftraege)) state.auftraege = data.state.auftraege;
+          if (typeof data.state.tenHourAck === 'boolean') state.tenHourAck = data.state.tenHourAck;
+          saveState();
+        }
+        if (data.history && typeof data.history === 'object') {
+          saveHistory(data.history);
+        }
+        if (typeof data.theme === 'string') {
+          applyTheme(data.theme);
+          try { localStorage.setItem(THEME_KEY, data.theme); } catch (e) {}
+        }
+        closeBackupModal();
+        showToast('Daten wiederhergestellt');
+        updateBundeslandDisplay();
+        showStep(state.bundesland ? (currentStep || 2) : 1);
+      } catch (err) {
+        showToast('Ungültige Backup-Datei');
+      }
+    };
+    reader.onerror = () => showToast('Datei konnte nicht gelesen werden');
+    reader.readAsText(file);
   }
 
   /* ===== Bahn-Wisdom (Version-Tap × 3) ===== */
@@ -2520,6 +2615,13 @@
     t.classList.add('show');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  /* ===== Service Worker (PWA Offline) ===== */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW failed:', err));
+    });
   }
 
   /* ===== Init ===== */

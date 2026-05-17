@@ -1,0 +1,20 @@
+{
+  "name": "Arbeitszeit-Rechner",
+  "short_name": "Arbeitszeit",
+  "description": "Persönliches Hilfsmittel zum Erfassen der täglichen Arbeitszeit in AE. Kein offizielles DB-Tool.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F2F3F5",
+  "theme_color": "#EC0016",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
