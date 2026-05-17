@@ -664,9 +664,10 @@
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    opacity: 0.7;
+    color: rgba(255,255,255,0.7);
     margin-bottom: 4px;
   }
+  .summary-section-title .info-icon { color: rgba(255,255,255,0.95); }
   .summary-row.emphasized { font-weight: 700; font-size: 14px; padding: 4px 0; }
   .summary-row.over-10h {
     background: rgba(236, 0, 22, 0.45);
@@ -1440,7 +1441,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.9.1';
+  const APP_VERSION = '1.9.2';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
