@@ -978,6 +978,13 @@
   }
   .app-footer a:hover { color: var(--db-red); }
   .app-footer .sep { margin: 0 6px; opacity: 0.5; }
+  .footer-disclaimer {
+    margin-top: 6px;
+    font-size: 10px;
+    color: var(--text-muted);
+    opacity: 0.75;
+    letter-spacing: 0.2px;
+  }
   .app-footer #appVersion {
     cursor: pointer;
     user-select: none;
@@ -1393,15 +1400,18 @@
 </div>
 
 <div class="app-footer">
-  <span id="appVersion" onclick="onVersionClick()" title="" role="button">v–</span>
-  <span class="sep">·</span>
-  <a href="https://github.com/marvdevlabs/DB-Arbeitszeit" target="_blank" rel="noopener">@marvdevlabs</a>
+  <div class="footer-line">
+    <span id="appVersion" onclick="onVersionClick()" title="" role="button">v–</span>
+    <span class="sep">·</span>
+    <a href="https://github.com/marvdevlabs/DB-Arbeitszeit" target="_blank" rel="noopener">@marvdevlabs</a>
+  </div>
+  <div class="footer-disclaimer">Privates Open-Source-Projekt · Kein offizielles Tool der Deutschen Bahn AG</div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.7.0';
+  const APP_VERSION = '1.7.1';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
