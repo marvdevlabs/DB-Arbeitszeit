@@ -159,6 +159,92 @@
   .step-indicator .dot.done { background: rgba(255,255,255,0.85); }
   .step-indicator .dot.current { width: 18px; background: #fff; }
 
+  .bundesland-btn {
+    background: rgba(0,0,0,0.22); color: #fff; border: none;
+    height: 32px; padding: 0 12px;
+    border-radius: 100px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
+    cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.15s, transform 0.08s;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .bundesland-btn:hover { background: rgba(0,0,0,0.35); }
+  .bundesland-btn:active { transform: scale(0.96); }
+  .bundesland-btn::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.75);
+    flex-shrink: 0;
+  }
+  .bundesland-btn.unset { background: rgba(255, 184, 77, 0.45); }
+  .bundesland-btn.unset::before { background: #FFD27A; box-shadow: 0 0 0 3px rgba(255, 210, 122, 0.25); }
+
+  .bundesland-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin: 12px 0 4px;
+  }
+  .bundesland-option {
+    background: var(--bg-card-alt);
+    border: 1.5px solid var(--border);
+    color: var(--text-main);
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 12.5px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+    text-align: left;
+    transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.08s;
+  }
+  .bundesland-option:hover {
+    border-color: var(--db-red);
+    background: var(--info-bg);
+    transform: translateY(-1px);
+  }
+  .bundesland-option.active {
+    background: linear-gradient(135deg, var(--db-red) 0%, var(--db-red-dark) 100%);
+    color: #fff;
+    border-color: var(--db-red);
+    box-shadow: 0 4px 12px rgba(236,0,22,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+
+  .form-row-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .form-row-pair .form-row { margin-bottom: 0; }
+  @media (max-width: 420px) {
+    .form-row-pair { grid-template-columns: 1fr; gap: 12px; }
+  }
+
+  .date-info {
+    margin-top: -4px; margin-bottom: 12px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap;
+  }
+  .date-info .tag {
+    padding: 2px 9px;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.2px;
+  }
+  .date-info .tag-holiday { background: var(--info-bg); color: var(--db-red); }
+  .date-info .tag-weekend { background: rgba(255, 184, 77, 0.22); color: #B8860B; }
+  .date-info .tag-info { background: rgba(76, 175, 80, 0.20); color: #2E7D32; }
+  body[data-theme="dark"] .date-info .tag-holiday { background: rgba(236, 0, 22, 0.22); color: #FF6B6B; }
+  body[data-theme="dark"] .date-info .tag-weekend { background: rgba(255, 184, 77, 0.25); color: #FFD27A; }
+  body[data-theme="dark"] .date-info .tag-info { background: rgba(76, 175, 80, 0.25); color: #A5D6A7; }
+
+  .summary-badge.holiday { background: rgba(255, 184, 77, 0.32); }
+  .summary-badge.weekend { background: rgba(255, 184, 77, 0.24); }
+
   .restored-banner {
     background: var(--info-bg);
     color: var(--info-text);
@@ -778,6 +864,9 @@
       <div class="sub">1 AE = 10 Minuten · Soll 7:48h Arbeitszeit (ohne Anfahrt/Abfahrt/Pause)</div>
     </div>
     <div class="header-right">
+      <button class="bundesland-btn unset" id="bundeslandBtn" onclick="openBundeslandModal()" title="Bundesland wählen" aria-label="Bundesland wählen">
+        <span id="bundeslandLabel">—</span>
+      </button>
       <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Theme wechseln" aria-label="Theme wechseln">
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -812,14 +901,21 @@
 
   <!-- Step 2 -->
   <div class="step hidden" id="step2">
-    <h2>Anzahl Aufträge & Startzeit</h2>
+    <h2>Datum, Startzeit & Aufträge</h2>
+    <div class="form-row-pair">
+      <div class="form-row">
+        <label for="datum">Datum</label>
+        <input type="date" id="datum" onchange="onDatumChange(this.value)">
+      </div>
+      <div class="form-row">
+        <label for="startzeit">Startzeit</label>
+        <input type="time" id="startzeit" value="06:30">
+      </div>
+    </div>
+    <div class="date-info" id="date-info"></div>
     <div class="form-row">
       <label for="anzahl">Aufträge heute</label>
       <input type="number" id="anzahl" min="1" max="50" value="3" inputmode="numeric" pattern="[0-9]*">
-    </div>
-    <div class="form-row">
-      <label for="startzeit">Startzeit</label>
-      <input type="time" id="startzeit" value="06:30">
     </div>
     <div class="button-row">
       <div class="left"><button class="btn btn-secondary" onclick="showStep(1)">← Zurück</button></div>
@@ -847,7 +943,8 @@
       <strong>Namen anpassen:</strong> Auftrags-Titel anklicken.
       <strong>Reise/Rückzeit:</strong> über Schalter aktivieren.
       <strong>Abzug:</strong> 30 min Anfahrt + 30 min Abfahrt + Pause (automatisch: 0 / 30 / 45 min je nach Arbeitszeit).
-      Plus ab 7:48h Tatsächlicher Arbeitszeit.
+      An <strong>Wochenenden und Feiertagen</strong> entfällt der An-/Abfahrt-Abzug bei Bereitschaft — nur Pause.
+      Plus ab 7:48h tatsächlicher Arbeitszeit.
     </div>
     <div id="auftraege-container"></div>
 
@@ -881,16 +978,133 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="modalBundesland">
+  <div class="modal-card">
+    <div class="modal-title">Bundesland wählen</div>
+    <div class="modal-body">
+      <p>In welchem Bundesland arbeitest du? Für die korrekte Berechnung der gesetzlichen Feiertage — bei Bereitschaft an Wochenenden und Feiertagen entfällt der An-/Abfahrt-Abzug.</p>
+      <div class="bundesland-grid" id="bundeslandGrid"></div>
+    </div>
+    <div class="modal-actions" id="modalBundeslandActions">
+      <button class="btn btn-secondary" id="modalBundeslandClose" onclick="closeBundeslandModal()">Schließen</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-  const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (immer)
+  const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
   const LIMIT10H_MIN = 600;      // 10h
   const SPLIT_OPTIONS = [10, 11, 20, 29, 40, 50];
-  const STORAGE_KEY = 'arbeitszeit-state-v1';
+  const STORAGE_KEY = 'arbeitszeit-state-v2';
+  const STORAGE_KEY_LEGACY = 'arbeitszeit-state-v1';
   const THEME_KEY = 'arbeitszeit-theme';
+
+  const BUNDESLAENDER = [
+    { code: 'BW', name: 'Baden-Württemberg' },
+    { code: 'BY', name: 'Bayern' },
+    { code: 'BE', name: 'Berlin' },
+    { code: 'BB', name: 'Brandenburg' },
+    { code: 'HB', name: 'Bremen' },
+    { code: 'HH', name: 'Hamburg' },
+    { code: 'HE', name: 'Hessen' },
+    { code: 'MV', name: 'Mecklenburg-Vorpommern' },
+    { code: 'NI', name: 'Niedersachsen' },
+    { code: 'NW', name: 'Nordrhein-Westfalen' },
+    { code: 'RP', name: 'Rheinland-Pfalz' },
+    { code: 'SL', name: 'Saarland' },
+    { code: 'SN', name: 'Sachsen' },
+    { code: 'ST', name: 'Sachsen-Anhalt' },
+    { code: 'SH', name: 'Schleswig-Holstein' },
+    { code: 'TH', name: 'Thüringen' }
+  ];
+  const WEEKDAYS_LONG = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+  const WEEKDAYS_SHORT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+
+  /* ===== Datum & Feiertage ===== */
+  function todayISO() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function parseLocalDate(iso) { return new Date(iso + 'T00:00:00'); }
+  function isoOf(date) {
+    return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+  }
+  function addDays(date, days) { const d = new Date(date); d.setDate(d.getDate() + days); return d; }
+  function formatDateDE(iso) {
+    const d = parseLocalDate(iso);
+    return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + d.getFullYear();
+  }
+  // Gaußsche Osterformel
+  function easterSunday(year) {
+    const a = year % 19;
+    const b = Math.floor(year / 100);
+    const c = year % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31);
+    const day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(year, month - 1, day);
+  }
+  // Buß- und Bettag: Mittwoch vor dem 23. November
+  function bussUndBettag(year) {
+    const d = new Date(year, 10, 22);
+    while (d.getDay() !== 3) d.setDate(d.getDate() - 1);
+    return d;
+  }
+  function getHolidaysForYear(year, bundesland) {
+    if (!bundesland) return {};
+    const easter = easterSunday(year);
+    const map = {};
+    const add = (date, name) => { map[isoOf(date)] = name; };
+    // Bundesweit
+    add(new Date(year, 0, 1), 'Neujahr');
+    add(addDays(easter, -2), 'Karfreitag');
+    add(addDays(easter, 1), 'Ostermontag');
+    add(new Date(year, 4, 1), 'Tag der Arbeit');
+    add(addDays(easter, 39), 'Christi Himmelfahrt');
+    add(addDays(easter, 50), 'Pfingstmontag');
+    add(new Date(year, 9, 3), 'Tag der Deutschen Einheit');
+    add(new Date(year, 11, 25), '1. Weihnachtstag');
+    add(new Date(year, 11, 26), '2. Weihnachtstag');
+    // Länderspezifisch
+    if (['BW','BY','ST'].includes(bundesland)) add(new Date(year, 0, 6), 'Heilige Drei Könige');
+    if (['BE','MV'].includes(bundesland)) add(new Date(year, 2, 8), 'Internationaler Frauentag');
+    if (bundesland === 'BB') { add(easter, 'Ostersonntag'); add(addDays(easter, 49), 'Pfingstsonntag'); }
+    if (['BW','BY','HE','NW','RP','SL'].includes(bundesland)) add(addDays(easter, 60), 'Fronleichnam');
+    if (['BY','SL'].includes(bundesland)) add(new Date(year, 7, 15), 'Mariä Himmelfahrt');
+    if (bundesland === 'TH') add(new Date(year, 8, 20), 'Weltkindertag');
+    if (['BB','HB','HH','MV','NI','SN','ST','SH','TH'].includes(bundesland)) add(new Date(year, 9, 31), 'Reformationstag');
+    if (['BW','BY','NW','RP','SL'].includes(bundesland)) add(new Date(year, 10, 1), 'Allerheiligen');
+    if (bundesland === 'SN') add(bussUndBettag(year), 'Buß- und Bettag');
+    return map;
+  }
+  function getHolidayName(dateISO, bundesland) {
+    if (!dateISO || !bundesland) return null;
+    const year = parseInt(dateISO.slice(0, 4));
+    return getHolidaysForYear(year, bundesland)[dateISO] || null;
+  }
+  function isWeekend(dateISO) {
+    const d = parseLocalDate(dateISO);
+    return d.getDay() === 0 || d.getDay() === 6;
+  }
+  function isSpecialDay(dateISO, bundesland) {
+    return isWeekend(dateISO) || !!getHolidayName(dateISO, bundesland);
+  }
+  function getFixAbzug() {
+    if (state.bereitschaft && isSpecialDay(state.date, state.bundesland)) return 0;
+    return FIX_ABZUG_MIN;
+  }
 
   // Pause automatisch nach Arbeitszeit (= Brutto − 60 Anfahrt/Abfahrt − Pause):
   //   < 6h Arbeit  → 0 min Pause
@@ -907,10 +1121,13 @@
   }
   function computeAbzug(bruttoMin) {
     const pauseMin = computePauseMin(bruttoMin);
-    return { abzugMin: FIX_ABZUG_MIN + pauseMin, pauseMin: pauseMin };
+    const fixAbzug = getFixAbzug();
+    return { abzugMin: fixAbzug + pauseMin, pauseMin, fixAbzug };
   }
 
   let state = {
+    bundesland: null,
+    date: todayISO(),
     bereitschaft: null,
     anzahl: 3,
     startzeit: "06:30",
@@ -924,7 +1141,9 @@
   function saveState() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        v: 1,
+        v: 2,
+        bundesland: state.bundesland,
+        date: state.date,
         bereitschaft: state.bereitschaft,
         anzahl: state.anzahl,
         startzeit: state.startzeit,
@@ -938,10 +1157,13 @@
   }
   function loadState() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      let raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) raw = localStorage.getItem(STORAGE_KEY_LEGACY);  // Migration v1 → v2
       if (!raw) return null;
       const d = JSON.parse(raw);
       if (typeof d !== 'object' || !d) return null;
+      if (typeof d.bundesland === 'string') state.bundesland = d.bundesland;
+      if (typeof d.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.date)) state.date = d.date;
       if (d.bereitschaft !== undefined) state.bereitschaft = d.bereitschaft;
       if (typeof d.anzahl === 'number') state.anzahl = d.anzahl;
       if (typeof d.startzeit === 'string') state.startzeit = d.startzeit;
@@ -953,15 +1175,22 @@
   }
   function resetAll() {
     if (!confirm('Alle gespeicherten Eingaben löschen und neu starten?')) return;
+    const keepBundesland = state.bundesland;
     try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    try { localStorage.removeItem(STORAGE_KEY_LEGACY); } catch (e) {}
     state = {
+      bundesland: keepBundesland,
+      date: todayISO(),
       bereitschaft: null, anzahl: 3, startzeit: "06:30",
       sapNumbers: [], auftraege: [], tenHourAck: false
     };
     document.getElementById('anzahl').value = 3;
     document.getElementById('startzeit').value = "06:30";
+    const dEl = document.getElementById('datum');
+    if (dEl) dEl.value = state.date;
     document.getElementById('restored-banner').classList.add('hidden');
     document.getElementById('modal10h').classList.add('hidden');
+    saveState();
     showStep(1);
   }
 
@@ -1024,6 +1253,8 @@
   function refreshStep2() {
     document.getElementById('anzahl').value = state.anzahl;
     document.getElementById('startzeit').value = state.startzeit;
+    document.getElementById('datum').value = state.date;
+    updateDateInfo();
   }
 
   function setBereitschaft(val) {
@@ -1036,14 +1267,72 @@
   function goToStep3() {
     const anzahl = parseInt(document.getElementById('anzahl').value);
     const startzeit = document.getElementById('startzeit').value;
+    const datum = document.getElementById('datum').value;
+    if (!datum) { alert('Bitte Datum wählen.'); return; }
     if (!anzahl || anzahl < 1) { alert('Bitte gültige Anzahl eingeben.'); return; }
     if (!startzeit) { alert('Bitte Startzeit eingeben.'); return; }
+    if (!state.bundesland) { openBundeslandModal(); return; }
     state.anzahl = anzahl;
     state.startzeit = startzeit;
+    state.date = datum;
     while (state.sapNumbers.length < anzahl) state.sapNumbers.push({ sap: '', splits: [] });
     if (state.sapNumbers.length > anzahl) state.sapNumbers.length = anzahl;
     if (state.auftraege.length > anzahl) state.auftraege.length = anzahl;
     showStep(3);
+  }
+
+  /* ===== Bundesland & Datum Handler ===== */
+  function openBundeslandModal() {
+    const grid = document.getElementById('bundeslandGrid');
+    grid.innerHTML = BUNDESLAENDER.map(bl =>
+      `<button class="bundesland-option${state.bundesland === bl.code ? ' active' : ''}"
+         onclick="setBundesland('${bl.code}')">${bl.name}</button>`
+    ).join('');
+    const closeBtn = document.getElementById('modalBundeslandClose');
+    if (closeBtn) closeBtn.style.display = state.bundesland ? '' : 'none';
+    document.getElementById('modalBundesland').classList.remove('hidden');
+  }
+  function closeBundeslandModal() {
+    document.getElementById('modalBundesland').classList.add('hidden');
+  }
+  function setBundesland(code) {
+    state.bundesland = code;
+    updateBundeslandDisplay();
+    closeBundeslandModal();
+    if (currentStep === 2) updateDateInfo();
+    if (currentStep === 4) renderAuftraege();
+    saveState();
+  }
+  function updateBundeslandDisplay() {
+    const label = document.getElementById('bundeslandLabel');
+    const btn = document.getElementById('bundeslandBtn');
+    if (label) label.textContent = state.bundesland || '—';
+    if (btn) {
+      btn.classList.toggle('unset', !state.bundesland);
+      const name = state.bundesland ? (BUNDESLAENDER.find(b => b.code === state.bundesland) || {}).name : null;
+      btn.title = name ? 'Bundesland: ' + name : 'Bundesland wählen';
+    }
+  }
+  function onDatumChange(value) {
+    state.date = value || todayISO();
+    updateDateInfo();
+    if (currentStep === 4) renderAuftraege();
+    saveState();
+  }
+  function updateDateInfo() {
+    const info = document.getElementById('date-info');
+    if (!info) return;
+    const d = parseLocalDate(state.date);
+    const weekday = WEEKDAYS_LONG[d.getDay()];
+    const holiday = getHolidayName(state.date, state.bundesland);
+    const weekend = isWeekend(state.date);
+    let html = `<span><strong>${weekday}</strong>, ${formatDateDE(state.date)}</span>`;
+    if (holiday) html += ` <span class="tag tag-holiday">${holiday}</span>`;
+    else if (weekend) html += ` <span class="tag tag-weekend">Wochenende</span>`;
+    if (state.bereitschaft && (holiday || weekend)) {
+      html += ` <span class="tag tag-info">ohne An-/Abfahrt-Abzug</span>`;
+    }
+    info.innerHTML = html;
   }
 
   function buildAutoName(sapEntry, i) {
@@ -1252,11 +1541,11 @@
     const startMin = parseStartMinutes();
     const endMin = times.length ? times[times.length - 1].rueckEnd : startMin;
     const bruttoMin = endMin - startMin;
-    const { pauseMin } = computeAbzug(bruttoMin);
-    const nettoMin = Math.max(0, bruttoMin - 60 - pauseMin);
+    const { pauseMin, fixAbzug } = computeAbzug(bruttoMin);
+    const nettoMin = Math.max(0, bruttoMin - fixAbzug - pauseMin);
     const { totalReise, totalArbeit, totalRueck, totalAE } = calcTotals();
     const plusMin = nettoMin - SOLL_MIN;
-    const h10Check = nettoMin + 60;
+    const h10Check = nettoMin + fixAbzug;
     const h10Over = h10Check - LIMIT10H_MIN;
 
     if (h10Over > 0 && !state.tenHourAck) {
@@ -1276,19 +1565,35 @@
     else if (h10Over > 0) limitClass = 'over-warn';
     const limitText = fmtDuration(h10Check) + ' / 10:00h' + (h10Over > 0 ? '  überschritten' : '');
 
+    const dateObj = parseLocalDate(state.date);
+    const dateLabel = WEEKDAYS_SHORT[dateObj.getDay()] + ', ' + formatDateDE(state.date);
+    const holiday = getHolidayName(state.date, state.bundesland);
+    const weekend = isWeekend(state.date);
+    const abzugLabel = fixAbzug === 0
+      ? 'Pause (auto)'
+      : 'An-/Abfahrt + Pause';
+    const abzugValue = fixAbzug === 0
+      ? pauseMin + ' min'
+      : fixAbzug + ' + ' + pauseMin + ' min';
+
+    let badges = '';
+    if (state.bereitschaft) badges += '<span class="summary-badge">Bereitschaft</span>';
+    if (holiday) badges += `<span class="summary-badge holiday">${holiday}</span>`;
+    else if (weekend) badges += '<span class="summary-badge weekend">Wochenende</span>';
+
     const summary = document.getElementById('summary');
     summary.className = 'summary';
     summary.innerHTML = `
       <div class="summary-top">
-        <span class="summary-label">Heute</span>
+        <span class="summary-label">${dateLabel}</span>
         <span class="summary-times">${minutesToHHMM(startMin)}<span class="summary-arrow">→</span>${minutesToHHMM(endMin)}</span>
-        ${state.bereitschaft ? '<span class="summary-badge">Bereitschaft</span>' : ''}
+        ${badges}
       </div>
       <div class="summary-grid">
         <div class="summary-section">
           <div class="summary-section-title">Zeit</div>
           <div class="summary-row"><span>Brutto</span><span>${fmtDuration(bruttoMin)}</span></div>
-          <div class="summary-row"><span>Pause (auto)</span><span>${pauseMin} min</span></div>
+          <div class="summary-row"><span>${abzugLabel}</span><span>${abzugValue}</span></div>
           <div class="summary-row emphasized"><span>Arbeit netto</span><span>${fmtDuration(nettoMin)}</span></div>
         </div>
         <div class="summary-section">
@@ -1303,7 +1608,7 @@
           <span>${sollText}</span>
         </div>
         <div class="summary-limit ${limitClass}">
-          <span>10h-Status · inkl. Fahrt</span>
+          <span>10h-Status${fixAbzug > 0 ? ' · inkl. Fahrt' : ''}</span>
           <span>${limitText}</span>
         </div>
       </div>
@@ -1359,14 +1664,19 @@
     const startMin = parseStartMinutes();
     const endMin = times.length ? times[times.length - 1].rueckEnd : startMin;
     const bruttoMin = endMin - startMin;
-    const { pauseMin } = computeAbzug(bruttoMin);
-    const nettoMin = Math.max(0, bruttoMin - 60 - pauseMin);
+    const { pauseMin, fixAbzug } = computeAbzug(bruttoMin);
+    const nettoMin = Math.max(0, bruttoMin - fixAbzug - pauseMin);
     const plusMin = nettoMin - SOLL_MIN;
-    const h10Check = nettoMin + 60;
-    const today = new Date().toLocaleDateString('de-DE');
+    const h10Check = nettoMin + fixAbzug;
+
+    const dateObj = parseLocalDate(state.date);
+    const weekday = WEEKDAYS_LONG[dateObj.getDay()];
+    const holiday = getHolidayName(state.date, state.bundesland);
+    const dateStr = formatDateDE(state.date);
+    const headerSuffix = holiday ? '  ·  ' + holiday : (isWeekend(state.date) ? '  ·  Wochenende' : '');
 
     const out = [];
-    out.push('Arbeitszeit-Protokoll ' + today);
+    out.push('Arbeitszeit-Protokoll  ' + weekday + ', ' + dateStr + headerSuffix);
     out.push('====================================');
     out.push('Start: ' + minutesToHHMM(startMin) + (state.bereitschaft ? '   (Bereitschaft)' : ''));
     out.push('Ende:  ' + minutesToHHMM(endMin));
@@ -1385,8 +1695,12 @@
     out.push('====================================');
     out.push('');
     out.push('Zeitraum:    ' + minutesToHHMM(startMin) + '–' + minutesToHHMM(endMin) + '   (Brutto ' + fmtDuration(bruttoMin) + ')');
-    out.push('Pause:       ' + pauseMin + ' min   (automatisch)');
-    out.push('10h-Limit:   ' + fmtDuration(h10Check) + ' / 10h 00min' + (h10Check > LIMIT10H_MIN ? '   ⛔ ÜBERSCHRITTEN' : '   (inkl. An-/Abfahrt)'));
+    if (fixAbzug > 0) {
+      out.push('Abzug:       ' + fixAbzug + ' min An-/Abfahrt + ' + pauseMin + ' min Pause');
+    } else {
+      out.push('Abzug:       ' + pauseMin + ' min Pause   (An-/Abfahrt entfällt: ' + (holiday || 'Wochenende') + ')');
+    }
+    out.push('10h-Limit:   ' + fmtDuration(h10Check) + ' / 10h 00min' + (h10Check > LIMIT10H_MIN ? '   ⛔ ÜBERSCHRITTEN' : (fixAbzug > 0 ? '   (inkl. An-/Abfahrt)' : '')));
     out.push('');
     out.push('AE-Werte für Rückmeldung');
     out.push('------------------------------------');
@@ -1399,8 +1713,7 @@
   }
 
   function sendEmail() {
-    const today = new Date().toLocaleDateString('de-DE');
-    const subject = encodeURIComponent('Arbeitszeit-Protokoll ' + today);
+    const subject = encodeURIComponent('Arbeitszeit-Protokoll ' + formatDateDE(state.date));
     const body = encodeURIComponent(buildPlainTextProtokoll());
     window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
   }
@@ -1436,11 +1749,15 @@
   /* ===== Init ===== */
   initTheme();
   const restoredStep = loadState();
+  updateBundeslandDisplay();
   if (restoredStep) {
     document.getElementById('restored-banner').classList.remove('hidden');
     showStep(restoredStep);
   } else {
     showStep(1);
+  }
+  if (!state.bundesland) {
+    setTimeout(() => openBundeslandModal(), 250);
   }
 </script>
 </body>
