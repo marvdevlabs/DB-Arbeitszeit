@@ -2,7 +2,7 @@
 
 Single-File-Webapp zum Erfassen und Berechnen der täglichen Arbeitszeit (1 AE = 10 min, Sollarbeitszeit 7:48h). Mobile-first, offline-fähig, keine Server-Komponente.
 
-**Version:** 1.0.0 · **Live:** [blackpolo91.github.io/DB-Arbeitszeit](https://blackpolo91.github.io/DB-Arbeitszeit/)
+**Version:** 1.1.0 · **Live:** [blackpolo91.github.io/DB-Arbeitszeit](https://blackpolo91.github.io/DB-Arbeitszeit/)
 
 <p align="center">
   <img src="docs/screenshots/06-step5-full.png" alt="Arbeitszeit-Rechner – Übersicht" width="380">

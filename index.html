@@ -751,6 +751,7 @@
     padding-right: 2px;
   }
   .history-item {
+    position: relative;
     display: block; width: 100%;
     background: var(--bg-card-alt);
     border: 1.5px solid var(--border);
@@ -768,12 +769,34 @@
     background: var(--info-bg);
     transform: translateY(-1px);
   }
+  .history-item-delete {
+    position: absolute;
+    top: 6px; right: 6px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    cursor: pointer;
+    font-size: 20px; font-weight: 400; line-height: 1;
+    font-family: inherit;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, color 0.15s, transform 0.1s;
+    z-index: 1;
+  }
+  .history-item-delete:hover {
+    background: rgba(236,0,22,0.12);
+    color: var(--db-red);
+    transform: scale(1.1);
+  }
+  body[data-theme="dark"] .history-item-delete:hover { background: rgba(236,0,22,0.20); }
   .history-item-row1 {
     display: flex; align-items: center; gap: 6px;
     font-size: 13.5px; font-weight: 700;
     margin-bottom: 4px;
     flex-wrap: wrap;
     color: var(--text-strong);
+    padding-right: 30px;
   }
   .history-item-row2 {
     display: flex; justify-content: space-between; gap: 12px;
@@ -1200,6 +1223,19 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="modalDeleteEntry">
+  <div class="modal-card">
+    <div class="modal-title">Eintrag löschen?</div>
+    <div class="modal-body">
+      <p>Der archivierte Tag <strong id="deleteEntryDate">—</strong> wird unwiderruflich entfernt.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="cancelDeleteEntry()">Abbrechen</button>
+      <button class="btn" onclick="confirmDeleteEntry()">Ja, löschen</button>
+    </div>
+  </div>
+</div>
+
 <div class="app-footer">
   <span id="appVersion">v–</span>
   <span class="sep">·</span>
@@ -1209,7 +1245,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.0.0';
+  const APP_VERSION = '1.1.0';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -1503,6 +1539,32 @@
     showToast('Verlauf gelöscht');
     openHistoryModal();
   }
+
+  let pendingDeleteEntryDate = null;
+  function openDeleteEntryModal(date) {
+    pendingDeleteEntryDate = date;
+    const d = parseLocalDate(date);
+    const weekday = WEEKDAYS_LONG[d.getDay()];
+    document.getElementById('deleteEntryDate').textContent = weekday + ', ' + formatDateDE(date);
+    document.getElementById('modalHistory').classList.add('hidden');
+    document.getElementById('modalDeleteEntry').classList.remove('hidden');
+  }
+  function cancelDeleteEntry() {
+    pendingDeleteEntryDate = null;
+    document.getElementById('modalDeleteEntry').classList.add('hidden');
+    openHistoryModal();
+  }
+  function confirmDeleteEntry() {
+    if (pendingDeleteEntryDate) {
+      const h = loadHistory();
+      delete h[pendingDeleteEntryDate];
+      saveHistory(h);
+      pendingDeleteEntryDate = null;
+    }
+    document.getElementById('modalDeleteEntry').classList.add('hidden');
+    showToast('Eintrag gelöscht');
+    openHistoryModal();
+  }
   function renderHistoryEntryItem(entry) {
     const d = parseLocalDate(entry.date);
     const weekday = WEEKDAYS_SHORT[d.getDay()];
@@ -1514,7 +1576,8 @@
     if (holiday) tags += `<span class="history-tag holiday">${escapeHtml(holiday)}</span>`;
     else if (weekend) tags += '<span class="history-tag weekend">Wochenende</span>';
     return `
-      <button class="history-item" onclick="viewHistoryEntry('${entry.date}')">
+      <div class="history-item" role="button" tabindex="0" onclick="viewHistoryEntry('${entry.date}')">
+        <button class="history-item-delete" type="button" onclick="event.stopPropagation(); openDeleteEntryModal('${entry.date}')" title="Diesen Tag löschen" aria-label="Tag löschen">×</button>
         <div class="history-item-row1">
           <span>${weekday}, ${formatDateDE(entry.date)}</span>
           ${tags}
@@ -1523,7 +1586,7 @@
           <span>${(entry.auftraege || []).length} Auftrag(e)</span>
           <span>${formatAE(totalAE)} AE gesamt</span>
         </div>
-      </button>
+      </div>
     `;
   }
   function viewHistoryEntry(date) {
