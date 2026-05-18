@@ -1510,8 +1510,8 @@
     <div class="info-box">
       <strong>Namen anpassen:</strong> Auftrags-Titel anklicken.
       <strong>Reise/Rückzeit:</strong> über Schalter aktivieren.
-      <strong>Abzug:</strong> 30 min Anfahrt + 30 min Abfahrt + Pause (automatisch: 0 / 30 / 45 min je nach Arbeitszeit).
-      An <strong>Wochenenden und Feiertagen</strong> entfällt der An-/Abfahrt-Abzug bei Bereitschaft — nur Pause.
+      <strong>Abzug Werktag:</strong> 30 min Anfahrt + 30 min Abfahrt + Pause (0 / 30 / 45 min je nach Arbeitszeit).
+      Bei <strong>Bereitschaft, Wochenende oder Feiertag</strong>: kein An-/Abfahrt-Abzug — nur 30 min Pause bei Brutto über 6 h.
       Plus ab 7:48h tatsächlicher Arbeitszeit.
     </div>
     <button class="btn btn-outline fahrtenbuch-import-btn" onclick="openFahrtenbuchModal()">
@@ -1726,7 +1726,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.14.5';
+  const APP_VERSION = '1.14.6';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -1836,20 +1836,32 @@
   function isSpecialDay(dateISO, bundesland) {
     return isWeekend(dateISO) || !!getHolidayName(dateISO, bundesland);
   }
+  // Spezialfall: bei Bereitschaft, Wochenende oder Feiertag entfaellt
+  // der An-/Abfahrt-Abzug komplett und es gilt eine vereinfachte Pause-Regel.
+  function isSpecialPauseCase() {
+    return !!state.bereitschaft || isSpecialDay(state.date, state.bundesland);
+  }
   function getFixAbzug() {
-    if (state.bereitschaft && isSpecialDay(state.date, state.bundesland)) return 0;
-    return FIX_ABZUG_MIN;
+    return isSpecialPauseCase() ? 0 : FIX_ABZUG_MIN;
   }
 
-  // Pause automatisch nach Arbeitszeit (= Brutto − 60 Anfahrt/Abfahrt − Pause):
+  // Pause-Berechnung:
+  //
+  // Standardfall (Werktag, keine Bereitschaft):
+  //   Brutto = Arbeit + 60 (An/Ab) + Pause
   //   < 6h Arbeit  → 0 min Pause
   //   6h–9h Arbeit → 30 min Pause
   //   > 9h Arbeit  → 45 min Pause
-  // Umgerechnet auf Brutto (= Arbeit + 60 + Pause):
-  //   Brutto < 7h     (< 420 min): keine Pause  (Arbeit < 6h)
-  //   Brutto ≤ 10:30h (≤ 630 min): 30 min Pause  (Arbeit ≤ 9h mit 30er Pause)
-  //   Brutto > 10:30h (> 630 min): 45 min Pause  (Arbeit > 9h)
+  //   → Brutto-Schwellen: < 420 → 0, ≤ 630 → 30, > 630 → 45
+  //
+  // Spezialfall (Bereitschaft / Wochenende / Feiertag):
+  //   Kein An-/Abfahrt-Abzug → Brutto = Arbeit + Pause
+  //   ≤ 6h Brutto → 0 min Pause
+  //   > 6h Brutto → 30 min Pause (kein 45-min-Sprung)
   function computePauseMin(bruttoMin) {
+    if (isSpecialPauseCase()) {
+      return bruttoMin > 360 ? 30 : 0;
+    }
     if (bruttoMin < 420) return 0;
     if (bruttoMin <= 630) return 30;
     return 45;
@@ -3281,7 +3293,8 @@
     let html = `<span><strong>${weekday}</strong>, ${formatDateDE(state.date)}</span>`;
     if (holiday) html += ` <span class="tag tag-holiday">${holiday}</span>`;
     else if (weekend) html += ` <span class="tag tag-weekend">Wochenende</span>`;
-    if (state.bereitschaft && (holiday || weekend)) {
+    // An-/Abfahrt entfaellt bei: Bereitschaft ODER Wochenende ODER Feiertag
+    if (state.bereitschaft || holiday || weekend) {
       html += ` <span class="tag tag-info">ohne An-/Abfahrt-Abzug</span>`;
     }
     info.innerHTML = html;
@@ -3691,7 +3704,11 @@
     if (fixAbzug > 0) {
       out.push('Abzug:       ' + fixAbzug + ' min An-/Abfahrt + ' + pauseMin + ' min Pause');
     } else {
-      out.push('Abzug:       ' + pauseMin + ' min Pause   (An-/Abfahrt entfällt: ' + (holiday || 'Wochenende') + ')');
+      const reasons = [];
+      if (state.bereitschaft) reasons.push('Bereitschaft');
+      if (holiday) reasons.push(holiday);
+      else if (isWeekend(state.date)) reasons.push('Wochenende');
+      out.push('Abzug:       ' + pauseMin + ' min Pause   (An-/Abfahrt entfällt: ' + (reasons.join(', ') || '—') + ')');
     }
     out.push('10h-Limit:   ' + fmtDuration(h10Check) + ' / 10h 00min' + (h10Check > LIMIT10H_MIN ? '   ⛔ ÜBERSCHRITTEN' : (fixAbzug > 0 ? '   (inkl. An-/Abfahrt)' : '')));
     out.push('');
