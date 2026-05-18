@@ -757,6 +757,104 @@
   }
   body[data-theme="dark"] .ocr-discard-note { color: #81c784; }
 
+  /* ===== Vimcar-Import (Beta) ===== */
+  .vimcar-import-btn { width: 100%; margin-bottom: 12px; }
+  .beta-badge {
+    display: inline-block;
+    background: #FFD27A;
+    color: #6B4F00;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 8px;
+    margin-left: 6px;
+    letter-spacing: 0.6px;
+    vertical-align: middle;
+  }
+  body[data-theme="dark"] .beta-badge { background: #B8860B; color: #FFF3CD; }
+  .modal-vimcar-card { max-width: 620px; }
+  .modal-vimcar-card .modal-body { max-height: 65vh; overflow-y: auto; padding-right: 4px; }
+  .vimcar-trip-list { margin: 10px 0 14px; display: flex; flex-direction: column; gap: 6px; }
+  .vimcar-trip {
+    background: var(--bg-card-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 12px;
+    align-items: center;
+    font-size: 13px;
+  }
+  .vimcar-trip-time {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--text-strong);
+    white-space: nowrap;
+  }
+  .vimcar-trip-time small {
+    display: block;
+    font-weight: 400;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+  .vimcar-trip-role {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1.5px solid var(--border-input);
+    border-radius: 7px;
+    background: var(--bg-input);
+    color: var(--text-main);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .vimcar-trip-role:focus { outline: none; border-color: var(--db-red); box-shadow: 0 0 0 3px rgba(236,0,22,0.14); }
+  .vimcar-trip.ignored { opacity: 0.55; }
+  .vimcar-trip.role-anfahrt { border-left: 3px solid #4CAF50; }
+  .vimcar-trip.role-rueck { border-left: 3px solid #2196F3; }
+  .vimcar-trip.role-innen { border-left: 3px solid var(--db-red); }
+  .vimcar-preview {
+    background: var(--bg-card-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .vimcar-preview-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .vimcar-preview-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 1px 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .vimcar-preview-row.total {
+    border-top: 1px solid var(--border);
+    padding-top: 4px;
+    margin-top: 4px;
+    font-weight: 700;
+  }
+  .vimcar-warning {
+    background: rgba(184, 134, 11, 0.15);
+    color: #6B4F00;
+    border-left: 3px solid #B8860B;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12.5px;
+    margin: 10px 0;
+  }
+  body[data-theme="dark"] .vimcar-warning { color: #FFD27A; background: rgba(184, 134, 11, 0.18); }
+
   /* ===== Über-Modal ===== */
   .modal-about-card .modal-body {
     max-height: 60vh;
@@ -1362,6 +1460,9 @@
       An <strong>Wochenenden und Feiertagen</strong> entfällt der An-/Abfahrt-Abzug bei Bereitschaft — nur Pause.
       Plus ab 7:48h tatsächlicher Arbeitszeit.
     </div>
+    <button class="btn btn-outline vimcar-import-btn" onclick="openVimcarModal()">
+      Vimcar-Fahrten importieren <span class="beta-badge">BETA</span>
+    </button>
     <div id="auftraege-container"></div>
 
     <div class="summary" id="summary"></div>
@@ -1490,6 +1591,36 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="modalVimcar">
+  <div class="modal-card modal-vimcar-card">
+    <div class="modal-title">
+      Vimcar-Fahrten importieren <span class="beta-badge">BETA</span>
+    </div>
+    <div class="modal-body" id="vimcarBody"></div>
+    <div class="modal-actions" id="vimcarActions"></div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modalVimcarBeta">
+  <div class="modal-card">
+    <div class="modal-title">Beta-Feature — bitte lesen</div>
+    <div class="modal-body">
+      <p>Das <strong>Vimcar-Import</strong> ist als <strong>Beta</strong> markiert. Die Texterkennung (OCR) auf Screenshots ist experimentell und kann Fehler machen, besonders bei Uhrzeiten.</p>
+      <p style="margin-top:8px;"><strong>Bitte immer:</strong></p>
+      <ul style="margin:6px 0 8px 22px;line-height:1.7;">
+        <li>Erkannte Werte vor der Übernahme prüfen</li>
+        <li>Im Zweifel manuell korrigieren oder ignorieren</li>
+        <li>AE-Endergebnis vor Rückmeldung kontrollieren</li>
+      </ul>
+      <p style="font-size:12.5px;color:var(--text-muted);">🔒 Das Bild wird nur lokal verarbeitet, nicht hochgeladen, nicht gespeichert.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeVimcarBeta(false)">Abbrechen</button>
+      <button class="btn" onclick="closeVimcarBeta(true)">Verstanden, weiter</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="modalAbout">
   <div class="modal-card modal-about-card">
     <div class="modal-title">Über</div>
@@ -1560,7 +1691,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.12.2';
+  const APP_VERSION = '1.13.0';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -1702,7 +1833,8 @@
     startzeit: "06:30",
     sapNumbers: [],
     auftraege: [],
-    tenHourAck: false
+    tenHourAck: false,
+    vimcarBetaAck: false
   };
   let currentStep = 1;
 
@@ -1719,6 +1851,7 @@
         sapNumbers: state.sapNumbers,
         auftraege: state.auftraege,
         tenHourAck: state.tenHourAck,
+        vimcarBetaAck: state.vimcarBetaAck,
         currentStep: currentStep,
         savedAt: Date.now()
       }));
@@ -1739,12 +1872,14 @@
       if (Array.isArray(d.sapNumbers)) state.sapNumbers = d.sapNumbers;
       if (Array.isArray(d.auftraege)) state.auftraege = d.auftraege;
       if (typeof d.tenHourAck === 'boolean') state.tenHourAck = d.tenHourAck;
+      if (typeof d.vimcarBetaAck === 'boolean') state.vimcarBetaAck = d.vimcarBetaAck;
       return (d.currentStep >= 1 && d.currentStep <= 5) ? d.currentStep : 1;
     } catch (e) { return null; }
   }
   function resetAll() {
     archiveCurrentDay();
     const keepBundesland = state.bundesland;
+    const keepVimcarBetaAck = state.vimcarBetaAck;
     try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
     try { localStorage.removeItem(STORAGE_KEY_LEGACY); } catch (e) {}
     try { sessionStorage.removeItem('may4-shown'); } catch (e) {}
@@ -1752,7 +1887,8 @@
       bundesland: keepBundesland,
       date: todayISO(),
       bereitschaft: null, anzahl: 3, startzeit: "06:30",
-      sapNumbers: [], auftraege: [], tenHourAck: false
+      sapNumbers: [], auftraege: [], tenHourAck: false,
+      vimcarBetaAck: keepVimcarBetaAck
     };
     document.getElementById('anzahl').value = 3;
     document.getElementById('startzeit').value = "06:30";
@@ -2129,6 +2265,381 @@
     saveState();
     goToStep5();
     showToast(orders.length + ' Auftrag' + (orders.length === 1 ? '' : 'e') + ' importiert');
+  }
+
+  /* ===== Vimcar-Import (Beta) ===== */
+  // Verstandnis-Bestätigung wird in state.vimcarBetaAck persistiert
+  let _pendingVimcarTrips = null;
+
+  function openVimcarModal() {
+    if (!state.vimcarBetaAck) {
+      document.getElementById('modalVimcarBeta').classList.remove('hidden');
+      return;
+    }
+    if (!state.auftraege || state.auftraege.length === 0) {
+      showToast('Erst Aufträge in Schritt 4 anlegen');
+      return;
+    }
+    resetVimcarModal();
+    document.getElementById('modalVimcar').classList.remove('hidden');
+  }
+
+  function closeVimcarModal() {
+    document.getElementById('modalVimcar').classList.add('hidden');
+    _pendingVimcarTrips = null;
+  }
+
+  function closeVimcarBeta(accepted) {
+    document.getElementById('modalVimcarBeta').classList.add('hidden');
+    if (accepted) {
+      state.vimcarBetaAck = true;
+      saveState();
+      // direkt weiter ins Import-Modal
+      setTimeout(openVimcarModal, 50);
+    }
+  }
+
+  function resetVimcarModal() {
+    _pendingVimcarTrips = null;
+    document.getElementById('vimcarBody').innerHTML =
+      '<p style="font-size:13px;margin-bottom:12px;">Lade einen <strong>Screenshot des Vimcar-Fahrtenblatts</strong> hoch. Die Uhrzeiten werden ausgelesen und du ordnest pro Fahrt eine Rolle zu.</p>' +
+      '<button class="btn" onclick="document.getElementById(\'vimcarFile\').click()">Screenshot wählen</button>' +
+      '<input type="file" id="vimcarFile" accept="image/*" style="display:none" onchange="handleVimcarFile(this.files[0]); this.value=\'\'">' +
+      '<p class="ocr-privacy-note" style="margin-top:14px;"><strong>🔒 Lokale Verarbeitung:</strong> Das Bild wird nur im Browser per OCR gelesen, nicht hochgeladen und nicht gespeichert.</p>';
+    document.getElementById('vimcarActions').innerHTML =
+      '<button class="btn btn-secondary" onclick="closeVimcarModal()">Abbrechen</button>';
+  }
+
+  function handleVimcarFile(file) {
+    if (!file) return;
+    if (!file.type || !file.type.startsWith('image/')) {
+      showToast('Bitte ein Bild auswählen');
+      return;
+    }
+    document.getElementById('vimcarBody').innerHTML =
+      '<p style="text-align:center;margin-bottom:14px;">Erkennung läuft …</p>' +
+      '<div class="ocr-spinner"></div>' +
+      '<p id="vimcarProgress" style="text-align:center;font-size:12.5px;color:var(--text-muted);margin-top:16px;">Tesseract wird geladen …</p>' +
+      '<p style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:12px;">🔒 Bild wird nur lokal verarbeitet, nicht gespeichert</p>';
+    document.getElementById('vimcarActions').innerHTML =
+      '<button class="btn btn-secondary" onclick="closeVimcarModal()">Abbrechen</button>';
+    runVimcarOcr(file);
+  }
+
+  async function runVimcarOcr(file) {
+    let blob = file;
+    try {
+      const Tesseract = await loadTesseract();
+      const progressEl = document.getElementById('vimcarProgress');
+      if (progressEl) progressEl.textContent = 'Bild wird gelesen …';
+      const { data } = await Tesseract.recognize(blob, 'deu', {
+        logger: m => {
+          const el = document.getElementById('vimcarProgress');
+          if (!el) return;
+          if (m.status === 'recognizing text') el.textContent = 'Erkennung: ' + Math.round(m.progress * 100) + '%';
+          else if (m.status) el.textContent = m.status + ' …';
+        }
+      });
+      blob = null;
+      const text = data.text || '';
+      const trips = parseVimcarText(text);
+      if (trips.length === 0) {
+        showVimcarNoTrips();
+      } else {
+        showVimcarMapping(trips);
+      }
+    } catch (err) {
+      blob = null;
+      console.error('Vimcar-OCR fehlgeschlagen:', err);
+      document.getElementById('vimcarBody').innerHTML =
+        '<p style="color:var(--db-red);">Erkennung fehlgeschlagen.</p>' +
+        '<p style="font-size:12.5px;color:var(--text-muted);">' + escapeHtml((err && err.message) || 'Unbekannter Fehler.') + '</p>';
+      document.getElementById('vimcarActions').innerHTML =
+        '<button class="btn btn-secondary" onclick="closeVimcarModal()">Schließen</button>' +
+        '<button class="btn" onclick="resetVimcarModal()">Nochmal</button>';
+    }
+  }
+
+  // Parser: aus OCR-Text Trips extrahieren
+  // Heuristik: Datums-Header (Wochentag, DD.MM.YYYY) trennt Tagesblöcke.
+  // Innerhalb eines Blocks ist jede HH:MM-Sequenz ein Trip:
+  //   erste Zeit = End-Zeit (oben in der Vimcar-UI), zweite Zeit = Start-Zeit (darunter)
+  // Tageswechsel: end < start ⇒ end-Zeit ist auf Folgetag.
+  function parseVimcarText(text) {
+    const WEEKDAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+    const lines = (text || '').split('\n').map(l => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
+    const dateRe = /(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)[,.\s]+(\d{1,2})\.(\d{1,2})\.(\d{2,4})/i;
+    const timeRe = /\b(\d{1,2}):(\d{2})\b/g;
+
+    // Tagesblöcke aufbauen
+    const blocks = []; // { dateISO, weekday, lines: [] }
+    let current = null;
+    for (const line of lines) {
+      const dm = line.match(dateRe);
+      if (dm) {
+        let year = parseInt(dm[4], 10);
+        if (year < 100) year += 2000;
+        const month = parseInt(dm[3], 10);
+        const day = parseInt(dm[2], 10);
+        const iso = year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        current = { dateISO: iso, weekday: dm[1], lines: [] };
+        blocks.push(current);
+        continue;
+      }
+      if (current) current.lines.push(line);
+    }
+
+    const trips = [];
+    let tripUid = 0;
+
+    for (const block of blocks) {
+      // Sammle Trips: pro 2 erkannte Zeiten = 1 Trip (1. = End, 2. = Start)
+      // Privat-Filter: wenn in einer der Zeilen vor/nach den Zeiten "Privat" steht
+      const tokens = []; // { type: 'time'|'private', value, idx }
+      for (const line of block.lines) {
+        if (/\bPrivat\b/i.test(line)) {
+          tokens.push({ type: 'private', value: 'Privat' });
+        }
+        let m;
+        timeRe.lastIndex = 0;
+        while ((m = timeRe.exec(line)) !== null) {
+          const h = parseInt(m[1], 10);
+          const min = parseInt(m[2], 10);
+          if (h >= 0 && h < 24 && min >= 0 && min < 60) {
+            tokens.push({
+              type: 'time',
+              value: String(h).padStart(2, '0') + ':' + String(min).padStart(2, '0')
+            });
+          }
+        }
+      }
+
+      // Tokens in Trips zerlegen (End-Zeit, Start-Zeit-Paare)
+      let i = 0;
+      while (i < tokens.length) {
+        // skip private markers
+        if (tokens[i].type === 'private') { i++; continue; }
+        const endTok = tokens[i++];
+        // skip private markers between
+        while (i < tokens.length && tokens[i].type === 'private') i++;
+        if (i >= tokens.length) break;
+        const startTok = tokens[i++];
+        if (endTok.type !== 'time' || startTok.type !== 'time') continue;
+        // Privat-Markierung: einfacher Heuristik: wenn 'private' nahe vor/in diesem Trip
+        // Wir prüfen oben/unten +/- 1 Token
+        const hasPrivate =
+          (tokens[i - 3] && tokens[i - 3].type === 'private') ||
+          (tokens[i] && tokens[i].type === 'private');
+        if (hasPrivate) continue; // Privat ignorieren
+
+        trips.push({
+          uid: ++tripUid,
+          dateISO: block.dateISO,
+          weekday: block.weekday,
+          endTime: endTok.value,    // Vimcar zeigt End-Zeit oben
+          startTime: startTok.value // Start-Zeit unten
+        });
+      }
+    }
+
+    // Absolute Minuten berechnen (Tageswechsel-bewusst)
+    // Pro Trip: startMin (Tagesnull = erstes Datum), endMin (kann +1 Tag sein wenn end<start)
+    if (trips.length === 0) return [];
+    const sortedByDate = [...new Set(trips.map(t => t.dateISO))].sort();
+    const dayBase = {};
+    sortedByDate.forEach((d, idx) => { dayBase[d] = idx * 1440; });
+
+    for (const t of trips) {
+      const [sh, sm] = t.startTime.split(':').map(Number);
+      const [eh, em] = t.endTime.split(':').map(Number);
+      t.startMin = dayBase[t.dateISO] + sh * 60 + sm;
+      t.endMin = dayBase[t.dateISO] + eh * 60 + em;
+      if (t.endMin < t.startMin) t.endMin += 1440; // Tageswechsel innerhalb der Fahrt
+      t.durationMin = t.endMin - t.startMin;
+    }
+
+    // Chronologisch sortieren
+    trips.sort((a, b) => a.startMin - b.startMin);
+    return trips;
+  }
+
+  function showVimcarNoTrips() {
+    document.getElementById('vimcarBody').innerHTML =
+      '<p style="margin-bottom:8px;">Keine Fahrten erkannt.</p>' +
+      '<p style="font-size:12.5px;color:var(--text-muted);">Versuch es mit einem schärferen Screenshot. Wichtig: Datums-Zeile (z.B. „Montag, 18.05.2026") muss mit auf dem Bild sein.</p>' +
+      '<p class="ocr-discard-note">🔒 Bild wurde verworfen.</p>';
+    document.getElementById('vimcarActions').innerHTML =
+      '<button class="btn btn-secondary" onclick="closeVimcarModal()">Schließen</button>' +
+      '<button class="btn" onclick="resetVimcarModal()">Anderes Bild</button>';
+  }
+
+  function showVimcarMapping(trips) {
+    _pendingVimcarTrips = trips;
+    // Default-Rollen: heuristisch erste = Anfahrt zu Auftrag 1, letzte = Rückfahrt von Auftrag 1, Mitte = Innen
+    const auftragsCount = state.auftraege.length;
+    trips.forEach((t, idx) => {
+      if (auftragsCount === 0) { t.role = 'ignore'; return; }
+      if (idx === 0) t.role = 'anfahrt:1';
+      else if (idx === trips.length - 1) t.role = 'rueck:1';
+      else t.role = 'innen:1';
+    });
+    renderVimcarTrips();
+  }
+
+  function renderVimcarTrips() {
+    const trips = _pendingVimcarTrips || [];
+    const auftragsCount = state.auftraege.length;
+
+    const weekdayShort = w => (w || '').slice(0, 2);
+    const tripRows = trips.map((t, idx) => {
+      const roleOptions = [];
+      roleOptions.push('<option value="ignore">— Ignorieren —</option>');
+      for (let i = 1; i <= auftragsCount; i++) {
+        const name = state.auftraege[i - 1].name || ('Auftrag ' + i);
+        roleOptions.push('<option value="anfahrt:' + i + '">Anfahrt → ' + escapeHtml(name) + '</option>');
+        roleOptions.push('<option value="innen:' + i + '">Innen-Fahrt — ' + escapeHtml(name) + '</option>');
+        roleOptions.push('<option value="rueck:' + i + '">Rückfahrt ← ' + escapeHtml(name) + '</option>');
+      }
+      const roleHtml = roleOptions.map(opt => {
+        const val = opt.match(/value="([^"]+)"/)[1];
+        const sel = val === t.role ? ' selected' : '';
+        return opt.replace('>', sel + '>');
+      }).join('');
+      const dateLbl = weekdayShort(t.weekday) + ' ' + t.dateISO.split('-').reverse().slice(0, 2).join('.');
+      const dur = Math.round(t.durationMin);
+      const durLbl = dur >= 60 ? Math.floor(dur / 60) + 'h ' + (dur % 60) + 'min' : dur + ' min';
+      const cls = t.role === 'ignore'
+        ? 'vimcar-trip ignored'
+        : 'vimcar-trip role-' + (t.role || '').split(':')[0];
+      return '<div class="' + cls + '">' +
+        '<div class="vimcar-trip-time">' + minutesToHHMM(t.startMin) + ' → ' + minutesToHHMM(t.endMin) +
+          '<small>' + dateLbl + ' · ' + durLbl + '</small></div>' +
+        '<select class="vimcar-trip-role" onchange="setVimcarTripRole(' + idx + ', this.value)">' + roleHtml + '</select>' +
+      '</div>';
+    }).join('');
+
+    const preview = computeVimcarPreview(trips);
+    let previewHtml = '<div class="vimcar-preview-title">Vorschau pro Auftrag</div>';
+    let anyValid = false;
+    for (let i = 1; i <= auftragsCount; i++) {
+      const p = preview[i];
+      const name = state.auftraege[i - 1].name || ('Auftrag ' + i);
+      if (!p || (p.reiseAE === 0 && p.arbeitAE === 0 && p.rueckAE === 0)) {
+        previewHtml += '<div class="vimcar-preview-row" style="opacity:0.55;"><span>' + escapeHtml(name) + '</span><span>— nichts zugeordnet —</span></div>';
+        continue;
+      }
+      anyValid = true;
+      previewHtml += '<div class="vimcar-preview-row"><span>' + escapeHtml(name) + ' · Reise</span><span>' + formatAE(p.reiseAE) + ' AE</span></div>';
+      previewHtml += '<div class="vimcar-preview-row"><span>' + escapeHtml(name) + ' · Arbeit</span><span>' + formatAE(p.arbeitAE) + ' AE</span></div>';
+      previewHtml += '<div class="vimcar-preview-row"><span>' + escapeHtml(name) + ' · Rück</span><span>' + formatAE(p.rueckAE) + ' AE</span></div>';
+      previewHtml += '<div class="vimcar-preview-row total"><span>Gesamt</span><span>' + formatAE(p.reiseAE + p.arbeitAE + p.rueckAE) + ' AE</span></div>';
+    }
+    const warnings = validateVimcarMapping(trips);
+    const warningsHtml = warnings.map(w => '<div class="vimcar-warning">⚠ ' + escapeHtml(w) + '</div>').join('');
+
+    document.getElementById('vimcarBody').innerHTML =
+      '<p style="font-size:13px;margin-bottom:6px;"><strong>' + trips.length + '</strong> Fahrt' + (trips.length === 1 ? '' : 'en') + ' erkannt. Ordne jeder Fahrt eine Rolle zu:</p>' +
+      '<div class="vimcar-trip-list">' + tripRows + '</div>' +
+      warningsHtml +
+      '<div class="vimcar-preview">' + previewHtml + '</div>' +
+      '<p class="ocr-discard-note">🔒 Bild wurde bereits verworfen.</p>';
+    document.getElementById('vimcarActions').innerHTML =
+      '<button class="btn btn-secondary" onclick="closeVimcarModal()">Abbrechen</button>' +
+      '<button class="btn"' + (anyValid ? '' : ' disabled style="opacity:0.5;cursor:not-allowed;"') + ' onclick="applyVimcarMapping()">Übernehmen</button>';
+  }
+
+  function setVimcarTripRole(idx, value) {
+    if (!_pendingVimcarTrips || !_pendingVimcarTrips[idx]) return;
+    _pendingVimcarTrips[idx].role = value;
+    renderVimcarTrips();
+  }
+
+  // Berechnet pro Auftrag die abgeleiteten AE-Werte
+  function computeVimcarPreview(trips) {
+    const byAuftrag = {};
+    const minToAE = m => Math.round(m / 1) / 10;  // 1 min = 0,1 AE
+
+    for (const t of trips) {
+      if (!t.role || t.role === 'ignore') continue;
+      const [role, aIdxStr] = t.role.split(':');
+      const aIdx = parseInt(aIdxStr, 10);
+      if (!aIdx) continue;
+      if (!byAuftrag[aIdx]) byAuftrag[aIdx] = { anfahrt: null, rueck: null, innen: [] };
+      if (role === 'anfahrt') byAuftrag[aIdx].anfahrt = t;
+      else if (role === 'rueck') byAuftrag[aIdx].rueck = t;
+      else if (role === 'innen') byAuftrag[aIdx].innen.push(t);
+    }
+
+    const result = {};
+    for (const aIdxStr of Object.keys(byAuftrag)) {
+      const aIdx = parseInt(aIdxStr, 10);
+      const grp = byAuftrag[aIdx];
+      const reiseAE = grp.anfahrt ? minToAE(grp.anfahrt.durationMin) : 0;
+      const rueckAE = grp.rueck ? minToAE(grp.rueck.durationMin) : 0;
+      // Arbeit = (Rück-Beginn) − (Anfahrt-Ende), abzüglich Innen-Fahrten? NEIN:
+      // Innen-Fahrten zählen ebenfalls zur Arbeit. Also einfach: Arbeit = Rück.startMin − Anfahrt.endMin.
+      let arbeitAE = 0;
+      if (grp.anfahrt && grp.rueck) {
+        const arbeitMin = grp.rueck.startMin - grp.anfahrt.endMin;
+        arbeitAE = arbeitMin > 0 ? minToAE(arbeitMin) : 0;
+      }
+      result[aIdx] = { reiseAE, arbeitAE, rueckAE };
+    }
+    return result;
+  }
+
+  function validateVimcarMapping(trips) {
+    const warnings = [];
+    const byAuftrag = {};
+    for (const t of trips) {
+      if (!t.role || t.role === 'ignore') continue;
+      const [role, aIdxStr] = t.role.split(':');
+      const aIdx = parseInt(aIdxStr, 10);
+      if (!byAuftrag[aIdx]) byAuftrag[aIdx] = { anfahrt: 0, rueck: 0, innen: 0, anfahrtTrip: null, rueckTrip: null };
+      byAuftrag[aIdx][role]++;
+      if (role === 'anfahrt') byAuftrag[aIdx].anfahrtTrip = t;
+      if (role === 'rueck') byAuftrag[aIdx].rueckTrip = t;
+    }
+    for (const aIdxStr of Object.keys(byAuftrag)) {
+      const aIdx = parseInt(aIdxStr, 10);
+      const grp = byAuftrag[aIdx];
+      const name = state.auftraege[aIdx - 1].name || ('Auftrag ' + aIdx);
+      if (grp.anfahrt > 1) warnings.push(name + ': mehr als eine Anfahrt zugeordnet');
+      if (grp.rueck > 1) warnings.push(name + ': mehr als eine Rückfahrt zugeordnet');
+      if ((grp.innen > 0 || grp.rueck > 0) && grp.anfahrt === 0) warnings.push(name + ': fehlt Anfahrt');
+      if ((grp.innen > 0 || grp.anfahrt > 0) && grp.rueck === 0) warnings.push(name + ': fehlt Rückfahrt');
+      if (grp.anfahrtTrip && grp.rueckTrip && grp.rueckTrip.startMin < grp.anfahrtTrip.endMin) {
+        warnings.push(name + ': Rückfahrt liegt zeitlich vor der Anfahrt');
+      }
+    }
+    return warnings;
+  }
+
+  function applyVimcarMapping() {
+    if (!_pendingVimcarTrips) return;
+    const preview = computeVimcarPreview(_pendingVimcarTrips);
+    let touched = 0;
+    for (const aIdxStr of Object.keys(preview)) {
+      const aIdx = parseInt(aIdxStr, 10);
+      const p = preview[aIdx];
+      const a = state.auftraege[aIdx - 1];
+      if (!a) continue;
+      if (p.reiseAE > 0) { a.reiseAktiv = true; a.reiseAE = p.reiseAE; }
+      if (p.rueckAE > 0) { a.rueckAktiv = true; a.rueckAE = p.rueckAE; }
+      if (p.arbeitAE > 0) {
+        // Bei Splits: Gesamt-Arbeit in erste Split-Zeile schreiben + Warnung
+        // (User verteilt manuell auf Splits, wie besprochen)
+        if (a.workEntries && a.workEntries.length > 0) {
+          a.workEntries[0].ae = p.arbeitAE;
+          // Weitere Splits unverändert lassen (User verteilt nach)
+        }
+      }
+      touched++;
+    }
+    closeVimcarModal();
+    renderAuftraege();
+    saveState();
+    showToast(touched + ' Auftrag' + (touched === 1 ? '' : 'e') + ' aktualisiert');
   }
 
   /* ===== Über-Modal ===== */
