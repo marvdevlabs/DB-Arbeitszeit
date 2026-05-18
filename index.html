@@ -1037,6 +1037,19 @@
   .protokoll-separator { border: none; border-top: 1px dashed rgba(255,255,255,0.25); margin: 8px 0; }
   h3.section { margin-top: 14px; margin-bottom: 4px; font-size: 13px; color: var(--text-strong); font-weight: 700; }
 
+  /* Tageswechsel-Indikator (Fußnoten-Stil): "01:12⁺¹" mit hochgestelltem +1 in DB-Rot */
+  .day-sup {
+    font-size: 0.62em;
+    vertical-align: super;
+    line-height: 0;
+    margin-left: 1px;
+    color: var(--db-red);
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+  /* Im Protokoll-Kontext (dunkler Hintergrund) heller machen */
+  .protokoll-time .day-sup { color: #FF9A85; }
+
   /* ===== Info-Tooltips ===== */
   .info-wrapper {
     position: relative;
@@ -1398,6 +1411,9 @@
       min-width: 36mm; letter-spacing: 0.3pt;
     }
     .protokoll-separator { border-top: 0.2mm dashed #888 !important; margin: 2mm 0 !important; }
+    /* Tageswechsel-Suffix in Druck: schwarz wie Rest, leicht hochgestellt */
+    .day-sup { color: var(--db-red) !important; font-size: 0.6em !important; }
+    .protokoll-time .day-sup { color: var(--db-red) !important; }
   }
 </style>
 </head>
@@ -1726,7 +1742,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.14.6';
+  const APP_VERSION = '1.14.7';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -3374,6 +3390,9 @@
     const hhmm = String(Math.floor(wrapped / 60)).padStart(2, '0') + ':' + String(wrapped % 60).padStart(2, '0');
     return dayOffset > 0 ? hhmm + ' +' + dayOffset : hhmm;
   };
+  // Wandelt "01:12 +1" (oder eine Zeitspanne mit +N) in HTML mit hochgestelltem Suffix um.
+  // Wird nur fuer HTML-Anzeigen benutzt — Plain-Text-Exports nutzen weiterhin minutesToHHMM direkt.
+  const timeWithDaySup = s => String(s).replace(/\s\+(\d+)/g, '<sup class="day-sup">+$1</sup>');
   const parseStartMinutes = () => { const [h, m] = state.startzeit.split(':').map(Number); return h * 60 + m; };
   const formatAE = ae => ae.toFixed(1).replace('.', ',');
   const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -3412,8 +3431,8 @@
       const t = times[i];
       const card = document.createElement('div');
       card.className = 'auftrag-card';
-      const workStartStr = minutesToHHMM(t.workStart);
-      const workEndStr = minutesToHHMM(t.workEnd);
+      const workStartStr = timeWithDaySup(minutesToHHMM(t.workStart));
+      const workEndStr = timeWithDaySup(minutesToHHMM(t.workEnd));
       const rueckLabel = i < state.auftraege.length - 1 ? 'Rückzeit (zum nächsten)' : 'Rückzeit (Heimfahrt)';
       const hasSplits = a.workEntries.length > 1 || (a.workEntries[0] && a.workEntries[0].split !== null);
 
@@ -3426,7 +3445,7 @@
         return `
           <div class="${rowClass}">
             <label class="switch locked"><input type="checkbox" checked disabled><span class="slider"></span></label>
-            <div class="time-label">${labelHtml} <small>${minutesToHHMM(et.start)}–${minutesToHHMM(et.end)}</small></div>
+            <div class="time-label">${labelHtml} <small>${timeWithDaySup(minutesToHHMM(et.start))}–${timeWithDaySup(minutesToHHMM(et.end))}</small></div>
             <input type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?" class="ae-input" value="${formatAE(e.ae)}"
               onchange="updateWorkAE(${i}, ${idx}, this.value)">
             <div class="minutes-display">${et.min} min</div>
@@ -3445,7 +3464,7 @@
             <input type="checkbox" ${a.reiseAktiv ? 'checked' : ''} onchange="toggleReise(${i}, this.checked)">
             <span class="slider"></span>
           </label>
-          <div class="time-label">Reisezeit <small>${a.reiseAktiv ? minutesToHHMM(t.reiseStart) + '–' + minutesToHHMM(t.workStart) : '—'}</small></div>
+          <div class="time-label">Reisezeit <small>${a.reiseAktiv ? timeWithDaySup(minutesToHHMM(t.reiseStart)) + '–' + timeWithDaySup(minutesToHHMM(t.workStart)) : '—'}</small></div>
           <input type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?" class="ae-input" value="${formatAE(a.reiseAE)}"
             ${a.reiseAktiv ? '' : 'disabled'} onchange="updateAE(${i}, 'reiseAE', this.value)">
           <div class="minutes-display">${a.reiseAktiv ? aeToMinutes(a.reiseAE) + ' min' : '—'}</div>
@@ -3456,7 +3475,7 @@
             <input type="checkbox" ${a.rueckAktiv ? 'checked' : ''} onchange="toggleRueck(${i}, this.checked)">
             <span class="slider"></span>
           </label>
-          <div class="time-label">${rueckLabel} <small>${a.rueckAktiv ? minutesToHHMM(t.rueckStart) + '–' + minutesToHHMM(t.rueckEnd) : '—'}</small></div>
+          <div class="time-label">${rueckLabel} <small>${a.rueckAktiv ? timeWithDaySup(minutesToHHMM(t.rueckStart)) + '–' + timeWithDaySup(minutesToHHMM(t.rueckEnd)) : '—'}</small></div>
           <input type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?" class="ae-input" value="${formatAE(a.rueckAE)}"
             ${a.rueckAktiv ? '' : 'disabled'} onchange="updateAE(${i}, 'rueckAE', this.value)">
           <div class="minutes-display">${a.rueckAktiv ? aeToMinutes(a.rueckAE) + ' min' : '—'}</div>
@@ -3583,7 +3602,7 @@
     summary.innerHTML = `
       <div class="summary-top">
         <span class="summary-label">${dateLabel}</span>
-        <span class="summary-times">${minutesToHHMM(startMin)}<span class="summary-arrow">→</span>${minutesToHHMM(endMin)}</span>
+        <span class="summary-times">${timeWithDaySup(minutesToHHMM(startMin))}<span class="summary-arrow">→</span>${timeWithDaySup(minutesToHHMM(endMin))}</span>
         ${badges}
       </div>
       <div class="summary-grid">
@@ -3647,7 +3666,7 @@
     const groups = buildProtokollGroups(times);
     const html = groups.map((g, idx) => {
       const linesHtml = g.lines.map(l =>
-        `<div class="protokoll-line"><span class="protokoll-time">${l.time}</span><span class="protokoll-text">${escapeHtml(l.text)}</span></div>`
+        `<div class="protokoll-line"><span class="protokoll-time">${timeWithDaySup(l.time)}</span><span class="protokoll-text">${escapeHtml(l.text)}</span></div>`
       ).join('');
       const sep = idx < groups.length - 1 ? '<hr class="protokoll-separator">' : '';
       return `<div class="protokoll-group"><div class="protokoll-group-header">${escapeHtml(g.name)}</div>${linesHtml}</div>${sep}`;
