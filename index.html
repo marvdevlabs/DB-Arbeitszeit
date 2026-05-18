@@ -1726,7 +1726,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.14.3';
+  const APP_VERSION = '1.14.4';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -2375,33 +2375,99 @@
     }
   }
 
+  // Deutsche Monatsnamen → Zahl (für mobile Fahrtenbuch-Screenshots)
+  const MONTHS_DE = {
+    'januar': 1, 'jan': 1,
+    'februar': 2, 'feb': 2,
+    'märz': 3, 'maerz': 3, 'mär': 3, 'mar': 3, 'mrz': 3,
+    'april': 4, 'apr': 4,
+    'mai': 5,
+    'juni': 6, 'jun': 6,
+    'juli': 7, 'jul': 7,
+    'august': 8, 'aug': 8,
+    'september': 9, 'sep': 9, 'sept': 9,
+    'oktober': 10, 'okt': 10,
+    'november': 11, 'nov': 11,
+    'dezember': 12, 'dez': 12
+  };
+
+  // Versucht eine Datums-Zeile zu parsen. Unterstützt:
+  //   "Montag, 18.05.2026"     (Desktop-Format)
+  //   "Montag, 18. Mai"        (Mobile-Format, ohne Jahr)
+  //   "Montag, 18. Mai 2026"   (Mobile mit Jahr)
+  // Wochentag ist Pflicht. Wenn Jahr fehlt → aktuelles Jahr; wenn Datum in Zukunft → Vorjahr.
+  function parseFahrtenbuchDateLine(line) {
+    // 1. Numerisches Format DD.MM.YYYY
+    let m = line.match(/(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)[,.\s]+(\d{1,2})\.(\d{1,2})\.(\d{2,4})/i);
+    if (m) {
+      let year = parseInt(m[4], 10);
+      if (year < 100) year += 2000;
+      const month = parseInt(m[3], 10);
+      const day = parseInt(m[2], 10);
+      return {
+        dateISO: year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0'),
+        weekday: m[1]
+      };
+    }
+    // 2. Monatsname-Format "DD. Monatsname [YYYY]"
+    m = line.match(/(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)[,.\s]+(\d{1,2})\.?\s+([A-Za-zäöüÄÖÜß]+)(?:\s+(\d{2,4}))?/i);
+    if (m) {
+      const monthNum = MONTHS_DE[m[3].toLowerCase()];
+      if (!monthNum) return null;
+      const day = parseInt(m[2], 10);
+      let year;
+      if (m[4]) {
+        year = parseInt(m[4], 10);
+        if (year < 100) year += 2000;
+      } else {
+        // Kein Jahr angegeben: aktuelles Jahr; wenn dadurch in Zukunft → Vorjahr
+        const today = new Date();
+        year = today.getFullYear();
+        const candidate = new Date(year, monthNum - 1, day);
+        if (candidate > today) year -= 1;
+      }
+      return {
+        dateISO: year + '-' + String(monthNum).padStart(2, '0') + '-' + String(day).padStart(2, '0'),
+        weekday: m[1]
+      };
+    }
+    return null;
+  }
+
   // Parser: aus OCR-Text Trips extrahieren
-  // Heuristik: Datums-Header (Wochentag, DD.MM.YYYY) trennt Tagesblöcke.
+  // Heuristik: Datums-Header trennt Tagesblöcke.
   // Innerhalb eines Blocks ist jede HH:MM-Sequenz ein Trip:
   //   erste Zeit = End-Zeit (oben in der Fahrtenbuch-UI), zweite Zeit = Start-Zeit (darunter)
   // Tageswechsel: end < start ⇒ end-Zeit ist auf Folgetag.
   function parseFahrtenbuchText(text) {
-    const WEEKDAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
     const lines = (text || '').split('\n').map(l => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
-    const dateRe = /(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)[,.\s]+(\d{1,2})\.(\d{1,2})\.(\d{2,4})/i;
     const timeRe = /\b(\d{1,2}):(\d{2})\b/g;
 
     // Tagesblöcke aufbauen
     const blocks = []; // { dateISO, weekday, lines: [] }
     let current = null;
     for (const line of lines) {
-      const dm = line.match(dateRe);
+      const dm = parseFahrtenbuchDateLine(line);
       if (dm) {
-        let year = parseInt(dm[4], 10);
-        if (year < 100) year += 2000;
-        const month = parseInt(dm[3], 10);
-        const day = parseInt(dm[2], 10);
-        const iso = year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-        current = { dateISO: iso, weekday: dm[1], lines: [] };
+        current = { dateISO: dm.dateISO, weekday: dm.weekday, lines: [] };
         blocks.push(current);
         continue;
       }
       if (current) current.lines.push(line);
+    }
+
+    // Fallback: Wenn überhaupt kein Datum erkannt wurde, alle Zeilen in einen
+    // Block mit dem aktuellen App-Datum stecken — sonst gingen alle Trips verloren.
+    if (blocks.length === 0 && lines.length > 0) {
+      const fallbackDate = state.date || todayISO();
+      let fallbackWeekday = '';
+      try {
+        const d = new Date(fallbackDate + 'T00:00:00');
+        if (!isNaN(d.getTime()) && Array.isArray(WEEKDAYS_LONG)) {
+          fallbackWeekday = WEEKDAYS_LONG[d.getDay()];
+        }
+      } catch (e) {}
+      blocks.push({ dateISO: fallbackDate, weekday: fallbackWeekday, lines: lines });
     }
 
     const trips = [];
