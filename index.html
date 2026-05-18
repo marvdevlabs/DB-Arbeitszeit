@@ -806,6 +806,34 @@
     margin-left: auto;
     white-space: nowrap;
   }
+  .fahrtenbuch-trip-delete {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 2px 8px;
+    border-radius: 5px;
+    line-height: 1;
+    font-family: inherit;
+  }
+  .fahrtenbuch-trip-delete:hover { color: var(--db-red); background: rgba(236,0,22,0.08); }
+  .fahrtenbuch-add-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .fahrtenbuch-count {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .fahrtenbuch-add-btn {
+    padding: 6px 12px !important;
+    font-size: 12.5px !important;
+  }
   .fahrtenbuch-trip-role {
     width: 100%;
     padding: 7px 10px;
@@ -1698,7 +1726,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.14.2';
+  const APP_VERSION = '1.14.3';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -2517,6 +2545,7 @@
           '<input type="time" value="' + escapeHtml(t.endTime) + '" ' +
             'onchange="updateFahrtenbuchTripField(' + idx + ', \'endTime\', this.value)" title="End-Zeit">' +
           '<span class="meta">' + escapeHtml(weekdayShort(t.weekday)) + ' · ' + durLbl + wrap + '</span>' +
+          '<button class="fahrtenbuch-trip-delete" onclick="deleteFahrtenbuchTrip(' + idx + ')" title="Fahrt löschen">×</button>' +
         '</div>' +
         '<select class="fahrtenbuch-trip-role" onchange="setFahrtenbuchTripRole(' + idx + ', this.value)">' + roleHtml + '</select>' +
       '</div>';
@@ -2569,7 +2598,11 @@
       : '';
 
     document.getElementById('fahrtenbuchBody').innerHTML =
-      '<p style="font-size:13px;margin-bottom:6px;"><strong>' + trips.length + '</strong> Fahrt' + (trips.length === 1 ? '' : 'en') + ' erkannt. Datum + Zeiten sind editierbar — bei OCR-Fehlern direkt korrigieren. Dann pro Fahrt eine Rolle zuordnen:</p>' +
+      '<p style="font-size:13px;margin-bottom:6px;">Datum + Zeiten sind editierbar — bei OCR-Fehlern direkt korrigieren. Fehlende Fahrt? <strong>+ Hinzufügen</strong>. Falsch erkannt? <strong>×</strong> löschen.</p>' +
+      '<div class="fahrtenbuch-add-row">' +
+        '<span class="fahrtenbuch-count"><strong>' + trips.length + '</strong> Fahrt' + (trips.length === 1 ? '' : 'en') + ' erkannt</span>' +
+        '<button class="btn btn-outline fahrtenbuch-add-btn" onclick="addFahrtenbuchTrip()">+ Fahrt hinzufügen</button>' +
+      '</div>' +
       '<div class="fahrtenbuch-trip-list">' + tripRows + '</div>' +
       warningsHtml +
       overwriteNotice +
@@ -2583,6 +2616,39 @@
   function setFahrtenbuchTripRole(idx, value) {
     if (!_pendingFahrtenbuchTrips || !_pendingFahrtenbuchTrips[idx]) return;
     _pendingFahrtenbuchTrips[idx].role = value;
+    renderFahrtenbuchTrips();
+  }
+
+  // Manuelles Hinzufügen einer Fahrt (für OCR-Misses)
+  function addFahrtenbuchTrip() {
+    if (!_pendingFahrtenbuchTrips) _pendingFahrtenbuchTrips = [];
+    const trips = _pendingFahrtenbuchTrips;
+    // Default-Datum: aus erster Fahrt, sonst state.date, sonst heute
+    const defaultDate = trips.length > 0 ? trips[0].dateISO : (state.date || todayISO());
+    let weekday = 'Montag';
+    try {
+      const d = new Date(defaultDate + 'T00:00:00');
+      if (!isNaN(d.getTime()) && Array.isArray(WEEKDAYS_LONG)) {
+        weekday = WEEKDAYS_LONG[d.getDay()];
+      }
+    } catch (e) {}
+    const maxUid = trips.reduce((m, t) => Math.max(m, t.uid || 0), 0);
+    trips.push({
+      uid: maxUid + 1,
+      dateISO: defaultDate,
+      weekday: weekday,
+      startTime: '07:00',
+      endTime: '07:30',
+      role: 'ignore'
+    });
+    recomputeFahrtenbuchTripTimes(trips);
+    renderFahrtenbuchTrips();
+  }
+
+  // Manuelles Löschen einer Fahrt (für OCR-Fehlerkennungen)
+  function deleteFahrtenbuchTrip(idx) {
+    if (!_pendingFahrtenbuchTrips) return;
+    _pendingFahrtenbuchTrips.splice(idx, 1);
     renderFahrtenbuchTrips();
   }
 
