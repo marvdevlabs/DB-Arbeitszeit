@@ -1367,120 +1367,112 @@
     .ae-input { font-size: 16px !important; }
   }
 
-  /* ===== Print / PDF ===== */
+  /* ===== Print / PDF — schlicht, hochkant ===== */
+  #print-area { display: none; }
   @media print {
-    @page { size: A4 landscape; margin: 8mm; }
+    @page { size: A4 portrait; margin: 14mm 16mm; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    body { background: #fff !important; padding: 0; font-size: 9.5pt; color: #000 !important; }
-    body[data-theme="dark"] { color: #000 !important; }
-    body[data-theme="dark"] * { color: inherit !important; }
-    .container { box-shadow: none; border-radius: 0; max-width: 100%; background: #fff !important; }
-    header { padding: 4mm 6mm; background: var(--db-red) !important; color: #fff !important; border-radius: 0; }
-    header * { color: #fff !important; }
-    header h1 { font-size: 13pt; }
-    header .sub { font-size: 8pt; }
-    .step-indicator, .theme-toggle, .pausen-hinweis { display: none !important; }
+    body { background: #fff !important; color: #000 !important; padding: 0; min-height: 0; }
+    /* Alles aus der App ausblenden — nur die Print-Area drucken */
+    body > .container, body > .toast, body > .modal-overlay { display: none !important; }
+    #print-area {
+      display: block;
+      color: #000;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 10pt;
+      line-height: 1.45;
+    }
 
-    .info-box, .button-row,
-    #step1, #step2, #step3, #step4,
-    .switch, .minutes-display,
-    .info-wrapper, .app-footer,
-    .toast { display: none !important; }
+    .p-header { margin-bottom: 6mm; padding-bottom: 3mm; border-bottom: 0.4mm solid #000; }
+    .p-title { font-size: 16pt; font-weight: 800; letter-spacing: -0.3pt; margin-bottom: 2mm; }
+    .p-meta { font-size: 11pt; color: #333; }
+    .p-meta .p-badge {
+      display: inline-block; background: #EC0016; color: #fff;
+      padding: 0.5mm 2mm; border-radius: 2mm;
+      font-size: 8.5pt; font-weight: 700; letter-spacing: 0.3pt;
+      margin-left: 3mm; vertical-align: middle;
+    }
 
-    .step { padding: 4mm 6mm; }
+    .p-summary {
+      background: #F5F5F7; border-radius: 2mm;
+      padding: 4mm 6mm; margin-bottom: 6mm;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1.5mm 6mm;
+      font-size: 10pt;
+    }
+    .p-summary .lbl { color: #666; }
+    .p-summary .val { font-weight: 700; }
+    .p-summary .plus-pos { color: #B8860B; }
+    .p-summary .plus-neg { color: #555; }
+    .p-summary .plus-met { color: #2E7D32; }
 
-    #auftraege-container { column-count: 2; column-gap: 6mm; column-fill: balance; }
-    .auftrag-card {
+    .p-section-title {
+      font-size: 11pt; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5pt; color: #000;
+      margin: 5mm 0 2.5mm; padding-bottom: 1mm;
+      border-bottom: 0.2mm solid #999;
+    }
+
+    /* === Protokoll-Sektion === */
+    .p-protokoll { margin-bottom: 6mm; }
+    .p-protokoll .p-group {
       break-inside: avoid; page-break-inside: avoid;
-      margin-bottom: 3mm; padding: 2.5mm 3mm;
-      border: 0.4mm solid #999;
-      border-left: 1mm solid var(--db-red);
-      border-radius: 1mm;
-      background: #fff !important; color: #000 !important;
+      margin-bottom: 3mm;
     }
-    .auftrag-card * { color: #000 !important; }
-    .auftrag-header { margin-bottom: 2mm; padding-bottom: 1.2mm; border-bottom: 0.2mm solid #ccc; gap: 4mm; }
-    .auftrag-name {
-      border: none !important; background: transparent !important;
-      padding: 0 !important; box-shadow: none !important;
-      font-size: 11pt !important; font-weight: 700;
+    .p-protokoll .p-group-name {
+      font-weight: 800; font-size: 10.5pt;
+      color: #EC0016; margin-bottom: 0.5mm;
     }
-    .auftrag-times { font-size: 12pt; color: #000 !important; font-weight: 700; }
-    .auftrag-times strong { color: var(--db-red) !important; font-size: 13pt; }
+    .p-protokoll .p-line {
+      display: flex; gap: 4mm;
+      padding: 0.4mm 0 0.4mm 4mm;
+      font-size: 10pt;
+    }
+    .p-protokoll .p-line .lbl { min-width: 22mm; }
+    .p-protokoll .p-line .val { font-variant-numeric: tabular-nums; }
+    .p-protokoll .day-sup { font-size: 0.65em; vertical-align: super; color: #EC0016; }
 
-    .time-row.disabled { display: none !important; }
-    .time-row.split-row { background: transparent !important; padding: 1mm 0 !important; }
-    .time-row { grid-template-columns: 1fr 14mm !important; gap: 2mm !important; padding: 1mm 0 !important; }
-    .time-label { font-size: 9.5pt; line-height: 1.3; }
-    .time-label small {
-      font-size: 12pt !important; color: #000 !important;
-      font-weight: 700; display: inline-block; margin-top: 1mm;
-    }
-    .split-badge { background: var(--db-red) !important; color: #fff !important; font-size: 8pt !important; }
-    .ae-input {
-      border: none !important; background: transparent !important;
-      padding: 0 !important; box-shadow: none !important;
-      font-weight: 700; font-size: 9.5pt !important;
-      text-align: right !important; color: #000 !important;
-    }
-
-    .summary {
-      position: static !important;
-      box-shadow: none !important;
-      background: var(--db-gray) !important; color: #fff !important;
-      margin-top: 3mm; padding: 3mm 4mm;
+    /* === MONA-Schema === */
+    .p-mona {}
+    .p-mona-card {
+      border: 0.3mm solid #999;
+      border-left: 1mm solid #EC0016;
+      border-radius: 1.5mm;
+      padding: 3mm 4mm;
+      margin-bottom: 3mm;
       break-inside: avoid; page-break-inside: avoid;
     }
-    .summary * { color: #fff !important; }
-    .summary.warn { background: #B8860B !important; }
-    .summary.danger { background: var(--db-red-dark) !important; }
-    .summary h2 { font-size: 10pt; margin-bottom: 2mm; }
-    .summary-grid { grid-template-columns: repeat(2, 1fr); font-size: 8.5pt; gap: 0 6mm; }
-    .summary-top { padding-bottom: 1.5mm; border-bottom: 0.2mm solid rgba(255,255,255,0.30); }
-    .summary-row { padding: 0.5mm 0; }
-    .summary-total { font-size: 10pt; padding-top: 2mm; margin-top: 2mm; }
-    .summary-soll { background: rgba(255,255,255,0.15) !important; font-size: 9pt; padding: 1.5mm 3mm; }
-    .summary-soll.over { background: rgba(255, 184, 77, 0.30) !important; }
-    .summary-soll.met { background: rgba(76, 175, 80, 0.35) !important; }
-    .summary-limit { background: rgba(255,255,255,0.10) !important; font-size: 8.5pt; padding: 1mm 3mm; }
-    .summary-limit.over-warn { background: rgba(255, 184, 77, 0.35) !important; }
-    .summary-limit.over-danger { background: rgba(236, 0, 22, 0.50) !important; }
-
-    .summary-section { margin-top: 2mm; padding-top: 1.5mm; }
-    .summary-section-title { font-size: 7.5pt; margin-bottom: 1mm; }
-    .summary-row.emphasized { font-size: 9.5pt; }
-    .summary-row.over-10h { background: rgba(236, 0, 22, 0.50) !important; padding: 1mm 2mm; }
-    .modal-overlay { display: none !important; }
-
-    h3.section { font-size: 9pt; margin-top: 3mm; margin-bottom: 1mm; color: #000 !important; }
-
-    .protokoll {
-      background: #fff !important; color: #000 !important;
-      border: 0.3mm solid #888;
-      font-size: 10pt; padding: 3mm 4mm; margin-top: 1mm;
-      line-height: 1.7;
-      column-count: 2; column-gap: 6mm;
-      font-family: "Consolas", "Monaco", monospace;
+    .p-mona-card-head {
+      display: flex; justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 1.5mm;
+      padding-bottom: 1mm;
+      border-bottom: 0.2mm dashed #BBB;
     }
-    .protokoll * { color: #000 !important; }
-    .protokoll-group { break-inside: avoid; page-break-inside: avoid; }
-    .protokoll-group-header { color: var(--db-red) !important; font-size: 10pt !important; margin-bottom: 1mm; }
-    .protokoll-line { break-inside: avoid; padding: 0.5mm 0 0.5mm 6mm; gap: 4mm; }
-    .protokoll-label {
-      color: #000 !important;
-      font-size: 11pt !important; font-weight: 600 !important;
-      min-width: 24mm;
+    .p-mona-sap { font-weight: 800; font-size: 11pt; }
+    .p-mona-card-num { font-size: 8pt; color: #888; }
+    .p-mona-status {
+      font-size: 9pt; color: #555;
+      margin-bottom: 1.5mm;
     }
-    .protokoll-time {
-      color: #000 !important;
-      font-size: 13pt !important; font-weight: 800 !important;
-      letter-spacing: 0.3pt;
+    .p-mona-status strong { color: #000; }
+    .p-mona-fields {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.8mm 4mm;
+      font-size: 10pt;
     }
-    .protokoll-separator { border-top: 0.2mm dashed #888 !important; margin: 2mm 0 !important; }
-    /* Tageswechsel-Suffix in Druck: schwarz wie Rest, leicht hochgestellt */
-    .day-sup { color: var(--db-red) !important; font-size: 0.6em !important; }
-    .protokoll-time .day-sup { color: var(--db-red) !important; }
+    .p-mona-fields .lbl { color: #555; }
+    .p-mona-fields .val { font-variant-numeric: tabular-nums; font-weight: 700; }
+    .p-mona-fields .day-sup { font-size: 0.65em; vertical-align: super; color: #EC0016; }
+
+    .p-footer {
+      margin-top: 6mm; padding-top: 2mm;
+      border-top: 0.2mm solid #BBB;
+      font-size: 8pt; color: #888;
+      text-align: center;
+    }
   }
+
 </style>
 </head>
 <body>
@@ -1829,8 +1821,11 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- Wird beim Drucken automatisch befuellt (siehe beforeprint-Hook) -->
+<div id="print-area" aria-hidden="true"></div>
+
 <script>
-  const APP_VERSION = '1.18.0';
+  const APP_VERSION = '1.18.1';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -4038,6 +4033,165 @@
     out.push('Gesamt:       ' + formatAE(totalAE).padStart(5) + ' AE   (' + fmtDuration(aeToMinutes(totalAE)) + ')');
     return out.join('\n');
   }
+
+  /* ===== Druck-Layout (Hochkant, schlicht: Protokoll + MONA-Schema) ===== */
+  function buildPrintHtml() {
+    const times = calcTimes();
+    const { totalReise, totalArbeit, totalRueck, totalAE } = calcTotals();
+    const startMin = parseStartMinutes();
+    const endMin = times.length ? times[times.length - 1].rueckEnd : startMin;
+    const bruttoMin = endMin - startMin;
+    const { abzugMin, pauseMin, fixAbzug } = computeAbzug(bruttoMin);
+    const nettoMin = Math.max(0, bruttoMin - fixAbzug - pauseMin);
+    const plusMin = nettoMin - SOLL_MIN;
+    const groups = buildProtokollGroups(times);
+    const dateObj = parseLocalDate(state.date);
+    const weekday = WEEKDAYS_LONG[dateObj.getDay()];
+    const holiday = getHolidayName(state.date, state.bundesland);
+    const isWE = isWeekend(state.date);
+
+    // Plus-Text (formatieren)
+    let plusText, plusCls;
+    if (plusMin === 0) { plusText = 'Soll erreicht'; plusCls = 'plus-met'; }
+    else if (plusMin > 0) { plusText = '+' + fmtDuration(plusMin) + ' über Soll'; plusCls = 'plus-pos'; }
+    else { plusText = '−' + fmtDuration(-plusMin) + ' bis Soll'; plusCls = 'plus-neg'; }
+
+    // Datum/Zeit fürs MONA-Schema
+    const monaDateTime = (m) => {
+      const dayOffset = Math.floor(m / 1440);
+      const wrapped = ((m % 1440) + 1440) % 1440;
+      const d = new Date(dateObj);
+      d.setDate(d.getDate() + dayOffset);
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yy = String(d.getFullYear()).slice(-2);
+      const hh = String(Math.floor(wrapped / 60)).padStart(2, '0');
+      const mn = String(wrapped % 60).padStart(2, '0');
+      const sup = dayOffset > 0 ? '<span class="day-sup">+' + dayOffset + '</span>' : '';
+      return dd + '.' + mm + '.' + yy + '  ' + hh + ':' + mn + sup;
+    };
+
+    // === Header ===
+    let html = '';
+    const bereit = state.bereitschaft ? '<span class="p-badge">Bereitschaft</span>' : '';
+    const tagBadge = holiday ? '<span class="p-badge" style="background:#7B1FA2;">' + escapeHtml(holiday) + '</span>'
+                              : (isWE ? '<span class="p-badge" style="background:#1976D2;">Wochenende</span>' : '');
+    html += '<div class="p-header">' +
+      '<div class="p-title">Arbeitszeit-Protokoll</div>' +
+      '<div class="p-meta"><strong>' + weekday + ', ' + formatDateDE(state.date) + '</strong>' + tagBadge + bereit + '</div>' +
+    '</div>';
+
+    // === Tages-Übersicht ===
+    html += '<div class="p-summary">' +
+      '<div><span class="lbl">Start:</span> <span class="val">' + minutesToHHMM(startMin) + '</span></div>' +
+      '<div><span class="lbl">Ende:</span> <span class="val">' + timeWithDaySup(minutesToHHMM(endMin)) + '</span></div>' +
+      '<div><span class="lbl">Brutto:</span> <span class="val">' + fmtDuration(bruttoMin) + '</span></div>' +
+      '<div><span class="lbl">Pause (auto):</span> <span class="val">' + pauseMin + ' min</span>' + (fixAbzug === 0 ? ' <span style="color:#666;font-size:9pt;">(ohne An-/Abfahrt-Abzug)</span>' : '') + '</div>' +
+      '<div><span class="lbl">Arbeitszeit (Soll 7:48h):</span> <span class="val">' + fmtDuration(nettoMin) + '</span></div>' +
+      '<div><span class="lbl">Bilanz:</span> <span class="val ' + plusCls + '">' + plusText + '</span></div>' +
+      '<div><span class="lbl">AE gesamt:</span> <span class="val">' + formatAE(totalAE) + ' AE</span>' +
+      ' <span style="color:#888;font-size:9pt;">(R ' + formatAE(totalReise) + ' / A ' + formatAE(totalArbeit) + ' / R ' + formatAE(totalRueck) + ')</span></div>' +
+    '</div>';
+
+    // === Protokoll ===
+    html += '<div class="p-section-title">Protokoll</div>';
+    html += '<div class="p-protokoll">';
+    groups.forEach(g => {
+      html += '<div class="p-group"><div class="p-group-name">' + escapeHtml(g.name) + '</div>';
+      g.lines.forEach(l => {
+        html += '<div class="p-line"><span class="lbl">' + escapeHtml(l.label) + '</span><span class="val">' + timeWithDaySup(l.time) + '</span></div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // === MONA-Schema ===
+    html += '<div class="p-section-title">Eingabe in MONAmC</div>';
+    html += '<div class="p-mona">';
+    groups.forEach((g, idx) => {
+      // Felder anhand der Lines bestimmen — Anreise/Arbeitszeit/Rueckreise
+      const anfahrtLine = g.lines.find(l => l.label === 'Anfahrt');
+      const arbeitLines = g.lines.filter(l => l.label === 'Arbeit');
+      const rueckLine = g.lines.find(l => l.label === 'Rückfahrt' || l.label === 'Heimfahrt');
+
+      html += '<div class="p-mona-card">' +
+        '<div class="p-mona-card-head">' +
+          '<span class="p-mona-sap">' + escapeHtml(g.name) + '</span>' +
+          '<span class="p-mona-card-num">' + (idx + 1) + ' / ' + groups.length + '</span>' +
+        '</div>' +
+        '<div class="p-mona-status"><strong>Status:</strong> ☐ Annehmen · ☐ In Anfahrt · ☐ Vor Ort</div>' +
+        '<div class="p-mona-fields">';
+
+      // Anreise
+      if (anfahrtLine) {
+        const [vonStr, bisStr] = anfahrtLine.time.split('–');
+        const vonMin = startMinForLabel(times, g.name, 'Anfahrt', 'start');
+        const bisMin = startMinForLabel(times, g.name, 'Anfahrt', 'end');
+        html += '<span class="lbl">Anreise von:</span><span class="val">' + monaDateTime(vonMin) + '</span>';
+        html += '<span class="lbl">Anreise bis:</span><span class="val">' + monaDateTime(bisMin) + '</span>';
+      }
+      // Arbeitszeit (gesamt: erste Arbeit-Start, letzte Arbeit-Ende)
+      if (arbeitLines.length > 0) {
+        const arbVon = startMinForLabel(times, g.name, 'Arbeit', 'start');
+        const arbBis = startMinForLabel(times, g.name, 'Arbeit', 'end');
+        html += '<span class="lbl">Arbeitszeit von:</span><span class="val">' + monaDateTime(arbVon) + '</span>';
+        html += '<span class="lbl">Arbeitszeit bis:</span><span class="val">' + monaDateTime(arbBis) + '</span>';
+      }
+      // Rückreise
+      if (rueckLine) {
+        const vonMin = startMinForLabel(times, g.name, rueckLine.label, 'start');
+        const bisMin = startMinForLabel(times, g.name, rueckLine.label, 'end');
+        html += '<span class="lbl">Rückreise von:</span><span class="val">' + monaDateTime(vonMin) + '</span>';
+        html += '<span class="lbl">Rückreise bis:</span><span class="val">' + monaDateTime(bisMin) + '</span>';
+      }
+
+      html += '</div></div>';
+    });
+    html += '</div>';
+
+    html += '<div class="p-footer">Gedruckt am ' + new Date().toLocaleDateString('de-DE') + ' · marvdevlabs/arbeitszeit · v' + APP_VERSION + '</div>';
+    return html;
+  }
+
+  // Helper: aus den Times-Daten den Start/End-Minuten-Wert fuer ein bestimmtes
+  // Auftrag+Label finden. Brauchen wir um Datum + Uhrzeit fuers MONA-Schema
+  // zu rendern (vor allem fuer Tageswechsel-Detection).
+  function startMinForLabel(times, groupName, label, kind) {
+    // groupName ist "SAP - SPLIT" oder "SAP" — wir matchen via Auftrag-Index
+    let auftragIdx = -1;
+    let splitVal = null;
+    for (let i = 0; i < state.auftraege.length; i++) {
+      const a = state.auftraege[i];
+      if (groupName === a.name) { auftragIdx = i; break; }
+      if (groupName.startsWith(a.name + ' - ')) {
+        auftragIdx = i;
+        splitVal = parseInt(groupName.slice(a.name.length + 3), 10);
+        break;
+      }
+    }
+    if (auftragIdx < 0) return 0;
+    const t = times[auftragIdx];
+    if (label === 'Anfahrt') return kind === 'start' ? t.reiseStart : t.workStart;
+    if (label === 'Rückfahrt' || label === 'Heimfahrt') return kind === 'start' ? t.rueckStart : t.rueckEnd;
+    if (label === 'Arbeit') {
+      const a = state.auftraege[auftragIdx];
+      if (splitVal !== null) {
+        const wIdx = a.workEntries.findIndex(e => e.split === splitVal);
+        if (wIdx >= 0) return kind === 'start' ? t.workTimes[wIdx].start : t.workTimes[wIdx].end;
+      } else {
+        return kind === 'start' ? t.workStart : t.workEnd;
+      }
+    }
+    return 0;
+  }
+
+  // Hook: vor jedem Druck die Print-Area befüllen
+  window.addEventListener('beforeprint', () => {
+    try {
+      const el = document.getElementById('print-area');
+      if (el) el.innerHTML = buildPrintHtml();
+    } catch (e) { console.error('Print-Build fehlgeschlagen:', e); }
+  });
 
   function copyProtokoll() {
     const text = buildPlainTextProtokoll();
