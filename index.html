@@ -702,6 +702,113 @@
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
+  /* ===== Wiederinbetriebnahme (AWIB/NWIB) ===== */
+  .wieder-section {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+  }
+  .wieder-collapsed {
+    background: transparent;
+    border: 1px dashed var(--border-input);
+    color: var(--text-muted);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    width: 100%;
+    text-align: left;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .wieder-collapsed:hover { border-color: var(--db-red); color: var(--db-red); }
+  .wieder-expanded {
+    background: var(--bg-card-alt);
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  .wieder-expanded-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .wieder-expanded-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    font-weight: 700;
+  }
+  .wieder-close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: inherit;
+  }
+  .wieder-close-btn:hover { color: var(--db-red); background: rgba(236,0,22,0.08); }
+  .wieder-status-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .wieder-status-btn {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1.5px solid var(--border-input);
+    background: var(--bg-input);
+    color: var(--text-main);
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.12s;
+  }
+  .wieder-status-btn:hover { border-color: var(--db-red); }
+  .wieder-status-btn.active.awib {
+    background: linear-gradient(180deg, #43A047 0%, #2E7D32 100%);
+    color: #fff;
+    border-color: #2E7D32;
+    box-shadow: 0 2px 6px rgba(46,125,50,0.25);
+  }
+  .wieder-status-btn.active.nwib {
+    background: linear-gradient(180deg, var(--db-red) 0%, var(--db-red-dark) 100%);
+    color: #fff;
+    border-color: var(--db-red);
+    box-shadow: 0 2px 6px rgba(236,0,22,0.25);
+  }
+  .wieder-textarea {
+    width: 100%;
+    min-height: 56px;
+    padding: 8px 10px;
+    font-size: 13px;
+    border: 1.5px solid var(--border-input);
+    border-radius: 6px;
+    background: var(--bg-input);
+    color: var(--text-main);
+    font-family: inherit;
+    resize: vertical;
+  }
+  .wieder-textarea:focus {
+    outline: none; border-color: var(--db-red);
+    box-shadow: 0 0 0 2px rgba(236,0,22,0.14);
+  }
+  .wieder-required {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .wieder-required.warn {
+    color: #B8860B;
+    font-weight: 600;
+  }
+
   /* ===== Walking-Modus (MONAmC) ===== */
   .modal-walk-card {
     max-width: 560px;
@@ -1748,15 +1855,17 @@
     <button class="btn btn-outline fahrtenbuch-import-btn" onclick="openFahrtenbuchModal()">
       Fahrtenbuch importieren
     </button>
-    <button class="btn fahrtenbuch-import-btn" onclick="openWalkMode()" style="margin-top:-4px;">
-      MONAmC-Modus starten
-    </button>
     <div id="auftraege-container"></div>
 
     <div class="summary" id="summary"></div>
 
     <h3 class="section">Protokoll für Rückmeldung</h3>
     <div class="protokoll" id="protokoll"></div>
+
+    <button class="btn fahrtenbuch-import-btn" onclick="openWalkMode()" style="margin-top:14px;font-size:15px;padding:12px;">
+      ▶ MONAmC-Modus starten
+    </button>
+
     <div class="button-row">
       <div class="left"><button class="btn btn-secondary" onclick="showStep(4)">← Zurück</button></div>
       <div class="center">
@@ -2001,7 +2110,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.16.0';
+  const APP_VERSION = '1.17.0';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -3258,6 +3367,34 @@
         });
       });
 
+      // Optionale AWIB/NWIB-Schritte (nur wenn pro Auftrag aktiviert,
+      // z.B. bei Störungen vom Koordinator)
+      const _auftragIdxForWieder = findAuftragIdxByGroupName(g.name);
+      const _aForWieder = _auftragIdxForWieder >= 0 ? state.auftraege[_auftragIdxForWieder] : null;
+      if (_aForWieder && _aForWieder.wiederInbetrieb &&
+          (_aForWieder.wiederInbetrieb.status === 'awib' || _aForWieder.wiederInbetrieb.status === 'nwib')) {
+        const isAwib = _aForWieder.wiederInbetrieb.status === 'awib';
+        const wieLabel = isAwib ? 'Anlage in Betrieb' : 'Anlage nicht wieder in Betrieb';
+        const wieIcon  = isAwib ? '👍' : '👎';
+        steps.push({
+          type: 'status',
+          groupIdx: gIdx,
+          auftragName,
+          statusKey: isAwib ? 'awib' : 'nwib',
+          statusLabel: wieLabel,
+          statusIcon: wieIcon,
+          hint: 'Lang drücken auf „' + wieLabel + '" in MONAmC. Es öffnet sich ein Fenster für die Begründung.'
+        });
+        steps.push({
+          type: 'wieder-grund',
+          groupIdx: gIdx,
+          auftragName,
+          auftragIdx: _auftragIdxForWieder,
+          fieldName: 'Begründung – ' + wieLabel,
+          hint: 'Begründung im Pop-up-Fenster eintragen. Hier vorbereiten und mit „Kopieren" übernehmen.'
+        });
+      }
+
       // Schritt: Zurueck zur Rueckmeldung
       steps.push({
         type: 'navigate',
@@ -3427,6 +3564,20 @@
           '<div class="walk-hint"><span class="walk-hint-icon">✋</span>' + escapeHtml(step.hint) + '</div>' +
         '</div>';
       speakText = 'Rückmeldetext ' + step.fieldName.split('–')[1] + '. Bitte eintippen oder kopieren.';
+    } else if (step.type === 'wieder-grund') {
+      const a = state.auftraege[step.auftragIdx];
+      const value = (a && a.wiederInbetrieb && a.wiederInbetrieb.grund) || '';
+      html =
+        '<div>' +
+          '<div class="walk-field-name">' + escapeHtml(step.fieldName) + '</div>' +
+          '<textarea class="walk-textarea" placeholder="Warum diese Wahl? Begründung eintippen …" ' +
+            'oninput="updateWalkWiederGrund(' + step.auftragIdx + ', this.value)">' +
+            escapeHtml(value) +
+          '</textarea>' +
+          '<button class="btn btn-outline walk-copy-btn" onclick="copyWalkWiederGrund(' + step.auftragIdx + ')">Kopieren</button>' +
+          '<div class="walk-hint"><span class="walk-hint-icon">✋</span>' + escapeHtml(step.hint) + '</div>' +
+        '</div>';
+      speakText = step.fieldName + '. Bitte eintippen oder kopieren.';
     } else if (step.type === 'final') {
       html =
         '<div class="walk-final">' +
@@ -3481,6 +3632,22 @@
     if (!v) { showToast('Text ist leer'); return; }
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(v).then(() => showToast('Text kopiert ✓'), () => fallbackCopy(v));
+    } else fallbackCopy(v);
+  }
+  function updateWalkWiederGrund(auftragIdx, value) {
+    const a = state.auftraege[auftragIdx];
+    if (!a) return;
+    if (!a.wiederInbetrieb) a.wiederInbetrieb = { status: null, grund: '' };
+    a.wiederInbetrieb.grund = value;
+    saveState();
+  }
+  function copyWalkWiederGrund(auftragIdx) {
+    const a = state.auftraege[auftragIdx];
+    if (!a || !a.wiederInbetrieb) return;
+    const v = a.wiederInbetrieb.grund || '';
+    if (!v) { showToast('Begründung ist leer'); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(v).then(() => showToast('Begründung kopiert ✓'), () => fallbackCopy(v));
     } else fallbackCopy(v);
   }
   function toggleWalkVoice() {
@@ -4132,10 +4299,85 @@
         workEntries: workEntries,
         rueckmeldetexte: existing && existing.rueckmeldetexte
           ? existing.rueckmeldetexte
-          : { anreise: '', arbeit: '', rueckreise: '' }
+          : { anreise: '', arbeit: '', rueckreise: '' },
+        wiederInbetrieb: existing && existing.wiederInbetrieb
+          ? existing.wiederInbetrieb
+          : { status: null, grund: '' }
       };
     });
     state.auftraege = newAuftraege;
+  }
+
+  /* ===== Wiederinbetriebnahme (AWIB/NWIB) pro Auftrag ===== */
+  function renderWiederSection(i, a) {
+    if (!a.wiederInbetrieb) a.wiederInbetrieb = { status: null, grund: '' };
+    const isActive = a.wiederInbetrieb.status === 'awib' || a.wiederInbetrieb.status === 'nwib';
+    if (!isActive) {
+      return '<div class="wieder-section">' +
+        '<button class="wieder-collapsed" onclick="enableWieder(' + i + ')">' +
+          '+ Wiederinbetriebnahme (für Koordinator)' +
+        '</button>' +
+      '</div>';
+    }
+    const status = a.wiederInbetrieb.status;
+    const grund = a.wiederInbetrieb.grund || '';
+    const needsGrund = status === 'nwib' && grund.trim().length === 0;
+    return '<div class="wieder-section"><div class="wieder-expanded">' +
+      '<div class="wieder-expanded-head">' +
+        '<span class="wieder-expanded-title">Wiederinbetriebnahme</span>' +
+        '<button class="wieder-close-btn" onclick="disableWieder(' + i + ')" title="Entfernen">✕</button>' +
+      '</div>' +
+      '<div class="wieder-status-row">' +
+        '<button class="wieder-status-btn awib' + (status === 'awib' ? ' active' : '') + '" onclick="setWiederStatus(' + i + ', \'awib\')">👍 AWIB</button>' +
+        '<button class="wieder-status-btn nwib' + (status === 'nwib' ? ' active' : '') + '" onclick="setWiederStatus(' + i + ', \'nwib\')">👎 NWIB</button>' +
+      '</div>' +
+      '<textarea class="wieder-textarea" placeholder="Begründung — was wurde gemacht / warum nicht wieder in Betrieb?" oninput="updateWiederGrund(' + i + ', this.value)">' + escapeHtml(grund) + '</textarea>' +
+      '<div class="wieder-required' + (needsGrund ? ' warn' : '') + '">' +
+        (needsGrund ? '⚠ Bei NWIB ist eine Begründung Pflicht.' : 'Bei NWIB ist die Begründung Pflicht.') +
+      '</div>' +
+    '</div></div>';
+  }
+
+  function enableWieder(i) {
+    const a = state.auftraege[i];
+    if (!a) return;
+    if (!a.wiederInbetrieb) a.wiederInbetrieb = { status: null, grund: '' };
+    a.wiederInbetrieb.status = 'awib';  // Default
+    saveState();
+    renderAuftraege();
+  }
+  function disableWieder(i) {
+    const a = state.auftraege[i];
+    if (!a) return;
+    a.wiederInbetrieb = { status: null, grund: '' };
+    saveState();
+    renderAuftraege();
+  }
+  function setWiederStatus(i, status) {
+    const a = state.auftraege[i];
+    if (!a) return;
+    if (!a.wiederInbetrieb) a.wiederInbetrieb = { status: null, grund: '' };
+    a.wiederInbetrieb.status = status;
+    saveState();
+    renderAuftraege();
+  }
+  function updateWiederGrund(i, value) {
+    const a = state.auftraege[i];
+    if (!a) return;
+    if (!a.wiederInbetrieb) a.wiederInbetrieb = { status: null, grund: '' };
+    a.wiederInbetrieb.grund = value;
+    // Nicht re-rendern bei jedem Tastendruck — nur saveState
+    saveState();
+    // Aber bei Wechsel zwischen leer/voll für die Warnung re-rendern
+    const wasEmpty = !value || !value.trim();
+    const warningEl = document.querySelector('.auftrag-card:nth-child(' + (i + 1) + ') .wieder-required');
+    if (warningEl) {
+      const shouldWarn = a.wiederInbetrieb.status === 'nwib' && wasEmpty;
+      warningEl.classList.toggle('warn', shouldWarn);
+      warningEl.textContent = shouldWarn
+        ? '⚠ Bei NWIB ist eine Begründung Pflicht.'
+        : 'Bei NWIB ist die Begründung Pflicht.';
+    }
   }
 
   function goToStep5() { syncAuftraegeFromSap(); showStep(5); }
@@ -4265,6 +4507,7 @@
             ${a.rueckAktiv ? '' : 'disabled'} onchange="updateAE(${i}, 'rueckAE', this.value)">
           <div class="minutes-display">${a.rueckAktiv ? aeToMinutes(a.rueckAE) + ' min' : '—'}</div>
         </div>
+        ${renderWiederSection(i, a)}
       `;
       container.appendChild(card);
     });
