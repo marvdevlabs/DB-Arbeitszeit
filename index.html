@@ -702,6 +702,61 @@
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
+  /* ===== Tag-Transfer (QR + URL) ===== */
+  .transfer-section {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .transfer-section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .transfer-meta {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+  }
+  .transfer-qr-wrap {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    justify-content: center;
+    margin: 8px auto;
+    max-width: 280px;
+  }
+  .transfer-qr-wrap svg { width: 100%; height: auto; display: block; }
+  .transfer-too-big {
+    background: rgba(184, 134, 11, 0.15);
+    border-left: 3px solid #B8860B;
+    color: #6B4F00;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin: 8px 0;
+  }
+  body[data-theme="dark"] .transfer-too-big { color: #FFD27A; background: rgba(184, 134, 11, 0.20); }
+  .transfer-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .transfer-actions .btn { flex: 1; min-width: 110px; }
+  .transfer-loading {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 24px 12px;
+  }
+
   /* ===== Screenshot-Import (OCR) ===== */
   .ocr-import-btn { width: 100%; margin-top: 8px; }
   .ocr-spinner {
@@ -1705,15 +1760,35 @@
   <div class="modal-card">
     <div class="modal-title">Daten-Sicherung</div>
     <div class="modal-body">
-      <p>Alle App-Daten (aktueller Tag, Verlauf, Bundesland, Theme) als JSON-Datei sichern oder eine vorherige Sicherung einspielen.</p>
-      <p style="color:var(--text-muted);font-size:13px;margin-top:8px;">Tipp: Beim Wechsel auf ein neues Gerät zuerst <strong>Herunterladen</strong>, dann auf dem neuen Gerät <strong>Hochladen</strong>.</p>
-      <p style="color:var(--text-muted);font-size:12px;margin-top:8px;">⚠ Beim Hochladen werden alle aktuellen Daten ersetzt.</p>
+      <div class="transfer-section-title">Komplette Sicherung (JSON)</div>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:4px;">Alle App-Daten als JSON-Datei sichern oder einspielen. Enthält Verlauf, Bundesland und Theme.</p>
+      <p style="color:var(--text-muted);font-size:12px;">⚠ Beim Hochladen werden alle aktuellen Daten ersetzt.</p>
+      <div class="transfer-actions">
+        <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">Hochladen</button>
+        <button class="btn btn-outline" onclick="exportData()">Herunterladen</button>
+        <input type="file" id="importFile" accept="application/json,.json" style="display:none" onchange="importData(this.files[0]); this.value='';">
+      </div>
+
+      <div class="transfer-section">
+        <div class="transfer-section-title">Tag-Übertragung (QR-Code)</div>
+        <div id="transferContent">
+          <div class="transfer-loading">Wird vorbereitet …</div>
+        </div>
+      </div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">Hochladen</button>
-      <button class="btn btn-outline" onclick="exportData()">Herunterladen</button>
       <button class="btn btn-secondary" onclick="closeBackupModal()">Schließen</button>
-      <input type="file" id="importFile" accept="application/json,.json" style="display:none" onchange="importData(this.files[0]); this.value='';">
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modalImportConfirm">
+  <div class="modal-card">
+    <div class="modal-title">Tag-Daten importieren?</div>
+    <div class="modal-body" id="importConfirmBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeImportConfirm(false)">Abbrechen</button>
+      <button class="btn" onclick="closeImportConfirm(true)">Importieren</button>
     </div>
   </div>
 </div>
@@ -1746,7 +1821,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.14.9';
+  const APP_VERSION = '1.15.0';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -2936,9 +3011,195 @@
   /* ===== Backup / Restore ===== */
   function openBackupModal() {
     document.getElementById('modalBackup').classList.remove('hidden');
+    renderTransferSection();  // QR + URL bei jedem Oeffnen frisch erzeugen
   }
   function closeBackupModal() {
     document.getElementById('modalBackup').classList.add('hidden');
+  }
+
+  /* ===== Tag-Transfer (QR + URL) ===== */
+  // Lazy-Loader fuer lz-string + qrcode-generator. Beide Libraries werden erst
+  // beim ersten Oeffnen des Backup-Modals nachgeladen (kein Initial-Overhead).
+  let _qrLibsLoading = null;
+  function loadTransferLibs() {
+    if (window.LZString && window.qrcode) return Promise.resolve();
+    if (_qrLibsLoading) return _qrLibsLoading;
+    const load = (src) => new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = resolve; s.onerror = () => reject(new Error('Bibliothek konnte nicht geladen werden: ' + src));
+      document.head.appendChild(s);
+    });
+    _qrLibsLoading = Promise.all([
+      window.LZString ? Promise.resolve() : load('https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js'),
+      window.qrcode  ? Promise.resolve() : load('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js')
+    ]).catch(err => { _qrLibsLoading = null; throw err; });
+    return _qrLibsLoading;
+  }
+
+  // Erzeugt eine kompakte URL mit dem aktuellen Tag (state) als #import=...
+  // Schemaversion v=1 fuer Forward-Compatibility.
+  function buildTransferPayload() {
+    const data = {
+      v: 1,
+      date: state.date,
+      bereitschaft: state.bereitschaft,
+      startzeit: state.startzeit,
+      anzahl: state.anzahl,
+      sapNumbers: state.sapNumbers,
+      auftraege: (state.auftraege || []).map(a => ({
+        name: a.name,
+        reiseAktiv: a.reiseAktiv, reiseAE: a.reiseAE,
+        rueckAktiv: a.rueckAktiv, rueckAE: a.rueckAE,
+        workEntries: a.workEntries
+      }))
+    };
+    const json = JSON.stringify(data);
+    const compressed = window.LZString.compressToEncodedURIComponent(json);
+    return location.origin + location.pathname + '#import=' + compressed;
+  }
+
+  async function renderTransferSection() {
+    const el = document.getElementById('transferContent');
+    if (!el) return;
+    el.innerHTML = '<div class="transfer-loading">QR-Bibliotheken werden geladen …</div>';
+    try {
+      await loadTransferLibs();
+    } catch (err) {
+      el.innerHTML = '<div class="transfer-too-big">⚠ Bibliotheken nicht geladen: ' + escapeHtml(err.message || 'Unbekannter Fehler') + '<br><small>Bei Offline-Nutzung erstmalig online laden lassen.</small></div>';
+      return;
+    }
+
+    if (!state.auftraege || state.auftraege.length === 0) {
+      el.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">Erst Aufträge anlegen, dann kann ein QR-Code zur Übertragung erzeugt werden.</p>';
+      return;
+    }
+
+    const url = buildTransferPayload();
+    const urlLength = url.length;
+    const auftragsCount = state.auftraege.length;
+    const meta = '<div class="transfer-meta">' + auftragsCount + ' Aufträge · URL ' + urlLength + ' Zeichen</div>';
+
+    // Single-QR bis ~1500 Zeichen, sonst URL-Only
+    if (urlLength <= 1500) {
+      let qrHtml = '';
+      try {
+        // Auto-Version: QR-Lib waehlt selbst die kleinste Variante. Level 'M' fuer Robustheit.
+        const qr = window.qrcode(0, 'M');
+        qr.addData(url);
+        qr.make();
+        // SVG: scalierbar, knackscharf auf jedem Display
+        qrHtml = '<div class="transfer-qr-wrap">' + qr.createSvgTag({ scalable: true, margin: 2 }) + '</div>';
+      } catch (e) {
+        qrHtml = '<div class="transfer-too-big">QR-Code konnte nicht erzeugt werden. Bitte URL kopieren.</div>';
+      }
+      el.innerHTML =
+        meta +
+        qrHtml +
+        '<p style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:4px;">Mit Kamera vom Zielgerät scannen.</p>' +
+        '<div class="transfer-actions">' +
+          '<button class="btn btn-outline" onclick="copyTransferUrl()">URL kopieren</button>' +
+          '<button class="btn btn-outline" onclick="renderTransferSection()">Neu generieren</button>' +
+        '</div>' +
+        '<p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;">🔒 Daten gehen nicht über einen Server. QR enthält SAP-Nummern — nicht öffentlich zeigen.</p>';
+    } else {
+      // Zu viele Daten für einen einzelnen QR-Code
+      el.innerHTML =
+        meta +
+        '<div class="transfer-too-big">⚠ Zu groß für einen einzelnen QR-Code (Limit ~1500 Zeichen). Bitte stattdessen die URL kopieren und auf dem Zielgerät in den Browser einfügen — Browser akzeptieren auch sehr lange URLs.</div>' +
+        '<div class="transfer-actions">' +
+          '<button class="btn" onclick="copyTransferUrl()">URL kopieren</button>' +
+        '</div>' +
+        '<p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;">🔒 Daten gehen nicht über einen Server.</p>';
+    }
+  }
+
+  function copyTransferUrl() {
+    try {
+      const url = buildTransferPayload();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(
+          () => showToast('URL kopiert ✓'),
+          () => fallbackCopy(url)
+        );
+      } else {
+        fallbackCopy(url);
+      }
+    } catch (e) {
+      showToast('URL konnte nicht erstellt werden');
+    }
+  }
+
+  // === Empfangs-Logik: beim App-Start #import=... auswerten ===
+  function handleImportHash() {
+    const hash = location.hash || '';
+    if (!hash.startsWith('#import=')) return;
+    const compressed = hash.substring('#import='.length);
+    if (!compressed) return;
+    // Lib lazy laden, dann decoden + bestätigen
+    loadTransferLibs().then(() => {
+      try {
+        const json = window.LZString.decompressFromEncodedURIComponent(compressed);
+        if (!json) throw new Error('Daten ungültig oder beschädigt');
+        const data = JSON.parse(json);
+        if (!data || data.v !== 1) throw new Error('Unbekanntes Schema (v=' + (data && data.v) + ')');
+        // Hash entfernen, damit bei Reload nicht erneut importiert wird
+        history.replaceState(null, '', location.pathname);
+        showImportConfirm(data);
+      } catch (err) {
+        showToast('Import fehlgeschlagen: ' + (err.message || 'Unbekannter Fehler'));
+        history.replaceState(null, '', location.pathname);
+      }
+    }).catch(err => {
+      showToast('Bibliotheken nicht geladen, Import nicht möglich');
+    });
+  }
+
+  let _pendingImport = null;
+  function showImportConfirm(data) {
+    _pendingImport = data;
+    const dateLbl = data.date ? formatDateDE(data.date) : '—';
+    const wd = data.date ? WEEKDAYS_SHORT[parseLocalDate(data.date).getDay()] : '';
+    const anzahl = data.anzahl || (data.auftraege ? data.auftraege.length : 0);
+    const bereitschaft = data.bereitschaft ? '<span class="summary-badge" style="margin-left:6px;">Bereitschaft</span>' : '';
+    document.getElementById('importConfirmBody').innerHTML =
+      '<p style="font-size:14px;"><strong>' + (wd ? wd + ', ' : '') + escapeHtml(dateLbl) + '</strong>' + bereitschaft + '</p>' +
+      '<p style="font-size:13px;color:var(--text-secondary);margin-top:6px;">' + anzahl + ' Aufträge · Start ' + escapeHtml(data.startzeit || '—') + '</p>' +
+      '<p style="font-size:12.5px;color:var(--text-muted);margin-top:12px;">⚠ Dein <strong>aktueller Tag</strong> wird ersetzt. Der Verlauf bleibt unberührt — der aktuelle Tag wird vorher automatisch ins Archiv verschoben (falls er Inhalte hat).</p>';
+    document.getElementById('modalImportConfirm').classList.remove('hidden');
+  }
+
+  function closeImportConfirm(apply) {
+    document.getElementById('modalImportConfirm').classList.add('hidden');
+    if (apply && _pendingImport) {
+      applyImport(_pendingImport);
+    }
+    _pendingImport = null;
+  }
+
+  function applyImport(data) {
+    try {
+      // Aktuellen Tag zuerst archivieren (falls Inhalte)
+      try { archiveCurrentDay(); } catch (e) {}
+      if (typeof data.date === 'string') state.date = data.date;
+      if (typeof data.bereitschaft === 'boolean' || data.bereitschaft === null) state.bereitschaft = data.bereitschaft;
+      if (typeof data.startzeit === 'string') state.startzeit = data.startzeit;
+      if (typeof data.anzahl === 'number') state.anzahl = data.anzahl;
+      if (Array.isArray(data.sapNumbers)) state.sapNumbers = data.sapNumbers;
+      if (Array.isArray(data.auftraege)) {
+        // _lastAutoName fehlt im Payload — neu berechnen so dass Name-Override-Detection funktioniert
+        state.auftraege = data.auftraege.map((a, i) => {
+          const sapEntry = state.sapNumbers[i];
+          const autoName = sapEntry ? buildAutoName(sapEntry, i) : (a.name || 'Auftrag ' + (i + 1));
+          return Object.assign({}, a, { _lastAutoName: autoName });
+        });
+      }
+      saveState();
+      showStep(5);
+      showToast('Tag importiert ✓');
+    } catch (e) {
+      console.error('Import fehlgeschlagen:', e);
+      showToast('Import fehlgeschlagen');
+    }
   }
   function exportData() {
     const data = {
@@ -3838,6 +4099,10 @@
   // ob er weitermachen oder den Tag archivieren will.
   if (restoredStep && dayHasWork(state)) {
     setTimeout(() => showRestoreModal(restoredStep), 250);
+  }
+  // Tag-Import via URL-Hash (#import=...) — wenn vorhanden, Bestaetigungs-Modal anzeigen
+  if ((location.hash || '').startsWith('#import=')) {
+    setTimeout(handleImportHash, 300);
   }
 </script>
 </body>
