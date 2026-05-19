@@ -702,6 +702,162 @@
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
+  /* ===== Walking-Modus (MONAmC) ===== */
+  .modal-walk-card {
+    max-width: 560px;
+    width: 100%;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 92vh;
+  }
+  .walk-header {
+    padding: 14px 18px 10px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card-alt);
+  }
+  .walk-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .walk-step-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    font-weight: 700;
+  }
+  .walk-icon-btn {
+    background: transparent;
+    border: 1.5px solid var(--border-input);
+    color: var(--text-secondary);
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .walk-icon-btn:hover { border-color: var(--db-red); color: var(--db-red); }
+  .walk-icon-btn.active { background: var(--db-red); color: #fff; border-color: var(--db-red); }
+  .walk-progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .walk-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--db-red), var(--db-red-dark));
+    transition: width 0.3s ease;
+  }
+  .walk-auftrag-info {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+  }
+  .walk-auftrag-sap {
+    font-weight: 700;
+    color: var(--text-strong);
+  }
+  .walk-body {
+    padding: 22px 22px 18px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 280px;
+    text-align: center;
+  }
+  .walk-field-name {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .walk-value { color: var(--text-strong); font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .walk-value-date { font-size: 36px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.5px; }
+  .walk-value-time { font-size: 72px; font-weight: 800; letter-spacing: -2px; color: var(--db-red); }
+  .walk-value-mono { font-size: 48px; font-weight: 800; letter-spacing: -1px; }
+  .walk-hint {
+    margin-top: 22px;
+    padding: 10px 14px;
+    background: var(--bg-card-alt);
+    border-left: 3px solid var(--db-red);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-main);
+    line-height: 1.55;
+    text-align: left;
+  }
+  .walk-hint-icon { font-size: 18px; margin-right: 6px; }
+  .walk-status-pictogram {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-card-alt);
+    border-radius: 12px;
+    padding: 18px 24px;
+    margin: 12px 0;
+  }
+  .walk-status-icon { font-size: 36px; line-height: 1; }
+  .walk-status-label { font-size: 24px; font-weight: 700; color: var(--text-strong); }
+  .walk-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1.5px solid var(--border-input);
+    border-radius: 8px;
+    background: var(--bg-input);
+    color: var(--text-main);
+    font-family: inherit;
+    resize: vertical;
+    margin-top: 8px;
+  }
+  .walk-textarea:focus { outline: none; border-color: var(--db-red); box-shadow: 0 0 0 3px rgba(236,0,22,0.14); }
+  .walk-copy-btn { margin-top: 8px; padding: 6px 14px !important; font-size: 13px !important; }
+  .walk-intro { padding: 12px 0; }
+  .walk-intro-name { font-size: 28px; font-weight: 800; color: var(--db-red); letter-spacing: -0.5px; margin-bottom: 6px; }
+  .walk-intro-meta { font-size: 13px; color: var(--text-secondary); }
+  .walk-final { padding: 20px 0; }
+  .walk-final-icon { font-size: 64px; color: #2E7D32; line-height: 1; margin-bottom: 14px; }
+  .walk-final-title { font-size: 22px; font-weight: 800; color: var(--text-strong); margin-bottom: 6px; }
+  .walk-final-text { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+  .walk-footer {
+    padding: 12px 16px 14px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-card-alt);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .walk-footer .btn { padding: 10px 16px; font-size: 14px; }
+  .walk-footer .btn-prev { flex: 0 0 auto; }
+  .walk-footer .btn-next { flex: 1; }
+  .walk-footer .btn-close {
+    flex: 0 0 auto; background: transparent; color: var(--text-muted);
+    border: 1.5px solid var(--border-input); padding: 10px 14px !important;
+  }
+  .walk-footer .btn-close:hover { border-color: var(--db-red); color: var(--db-red); background: transparent !important; }
+  @media (max-width: 520px) {
+    .modal-walk-card { max-width: 100%; max-height: 100vh; border-radius: 0; height: 100vh; }
+    .walk-body { padding: 16px 14px; min-height: 200px; }
+    .walk-value-date { font-size: 28px; }
+    .walk-value-time { font-size: 54px; }
+    .walk-value-mono { font-size: 36px; }
+    .walk-status-icon { font-size: 32px; }
+    .walk-status-label { font-size: 20px; }
+    .walk-intro-name { font-size: 22px; }
+    .walk-footer .btn { padding: 12px 14px; }
+  }
+
   /* ===== Tag-Transfer (QR + URL) ===== */
   .transfer-section {
     margin-top: 14px;
@@ -1592,6 +1748,9 @@
     <button class="btn btn-outline fahrtenbuch-import-btn" onclick="openFahrtenbuchModal()">
       Fahrtenbuch importieren
     </button>
+    <button class="btn fahrtenbuch-import-btn" onclick="openWalkMode()" style="margin-top:-4px;">
+      MONAmC-Modus starten
+    </button>
     <div id="auftraege-container"></div>
 
     <div class="summary" id="summary"></div>
@@ -1793,6 +1952,27 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="modalWalk">
+  <div class="modal-card modal-walk-card">
+    <div class="walk-header">
+      <div class="walk-header-row">
+        <span class="walk-step-label" id="walkStepLabel">Schritt 1 von 1</span>
+        <div style="display:flex;gap:6px;">
+          <button class="walk-icon-btn" id="walkVoiceBtn" onclick="toggleWalkVoice()" title="Vorlesen" aria-label="Vorlesen">🔊</button>
+        </div>
+      </div>
+      <div class="walk-progress-bar"><div class="walk-progress-fill" id="walkProgressFill" style="width:0%"></div></div>
+      <div class="walk-auftrag-info" id="walkAuftragInfo">—</div>
+    </div>
+    <div class="walk-body" id="walkBody">—</div>
+    <div class="walk-footer">
+      <button class="btn btn-secondary btn-prev" id="walkPrevBtn" onclick="walkPrev()">← Zurück</button>
+      <button class="btn btn-next" id="walkNextBtn" onclick="walkNext()">✓ Erledigt — weiter</button>
+      <button class="btn btn-close" onclick="closeWalkMode()" title="Modus beenden" aria-label="Beenden">✕</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="modalSpruch">
   <div class="modal-card modal-spruch-card">
     <div class="spruch-quote-glyph" aria-hidden="true">&ldquo;</div>
@@ -1821,7 +2001,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const APP_VERSION = '1.15.0';
+  const APP_VERSION = '1.16.0';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -1975,7 +2155,8 @@
     startzeit: "06:30",
     sapNumbers: [],
     auftraege: [],
-    tenHourAck: false
+    tenHourAck: false,
+    walkMode: { stepIdx: 0 }
   };
   let currentStep = 1;
 
@@ -1992,6 +2173,7 @@
         sapNumbers: state.sapNumbers,
         auftraege: state.auftraege,
         tenHourAck: state.tenHourAck,
+        walkMode: state.walkMode || { stepIdx: 0 },
         currentStep: currentStep,
         savedAt: Date.now()
       }));
@@ -2012,6 +2194,7 @@
       if (Array.isArray(d.sapNumbers)) state.sapNumbers = d.sapNumbers;
       if (Array.isArray(d.auftraege)) state.auftraege = d.auftraege;
       if (typeof d.tenHourAck === 'boolean') state.tenHourAck = d.tenHourAck;
+      if (d.walkMode && typeof d.walkMode.stepIdx === 'number') state.walkMode = d.walkMode;
       return (d.currentStep >= 1 && d.currentStep <= 5) ? d.currentStep : 1;
     } catch (e) { return null; }
   }
@@ -2025,7 +2208,8 @@
       bundesland: keepBundesland,
       date: todayISO(),
       bereitschaft: null, anzahl: 3, startzeit: "06:30",
-      sapNumbers: [], auftraege: [], tenHourAck: false
+      sapNumbers: [], auftraege: [], tenHourAck: false,
+      walkMode: { stepIdx: 0 }
     };
     document.getElementById('anzahl').value = 3;
     document.getElementById('startzeit').value = "06:30";
@@ -2999,6 +3183,339 @@
     showToast(touched + ' Auftrag' + (touched === 1 ? '' : 'e') + ' aktualisiert');
   }
 
+  /* ===== Walking-Modus (MONAmC) ===== */
+  // Sequenzielle Anleitung durch alle MONAmC-Eingaben: Status, Zeiten, Texte.
+  // Pro Auftrags-Block (= eine Protokoll-Gruppe, also pro Split eigener Block).
+  let _walkSteps = [];
+  let _walkIdx = 0;
+  let _walkVoiceOn = false;
+
+  function openWalkMode() {
+    if (!state.auftraege || state.auftraege.length === 0) {
+      showToast('Erst Aufträge anlegen');
+      return;
+    }
+    const times = calcTimes();
+    _walkSteps = buildWalkSteps(times);
+    if (_walkSteps.length === 0) {
+      showToast('Keine Schritte vorhanden');
+      return;
+    }
+    // Resume an gespeicherter Stelle (falls vorhanden und in Reichweite)
+    const saved = (state.walkMode && typeof state.walkMode.stepIdx === 'number') ? state.walkMode.stepIdx : 0;
+    _walkIdx = Math.min(Math.max(0, saved), _walkSteps.length - 1);
+    document.getElementById('modalWalk').classList.remove('hidden');
+    renderWalkStep();
+  }
+
+  function closeWalkMode() {
+    document.getElementById('modalWalk').classList.add('hidden');
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    // Position speichern, damit beim naechsten Oeffnen weitergemacht wird
+    state.walkMode = { stepIdx: _walkIdx };
+    saveState();
+  }
+
+  // Generiert die Liste aller Schritte. Pro Auftrag/Split eine Block-Sequenz:
+  //  1. Intro
+  //  2. Status: Annehmen, In Anfahrt, Vor Ort (lang drücken)
+  //  3. Zeiten: Anreise von/bis, Arbeitszeit von/bis, Rückreise von/bis (nur die aktiven)
+  //  4. Texte: Anreise-Text, Arbeitszeit-Text, Rückreise-Text
+  //  5. Final-Screen am Ende des letzten Auftrags
+  function buildWalkSteps(times) {
+    const steps = [];
+    const groups = buildProtokollGroups(times);  // schon split-aware
+
+    groups.forEach((g, gIdx) => {
+      // Welche Auftrags-Daten gehoeren zur Gruppe? Wir mappen via name-Praefix
+      // (Format: "SAP" oder "SAP - SPLIT"). Hier reicht der Gruppen-Index fuer
+      // Status-Persistenz — wir nutzen einen eigenen Slot pro Gruppe.
+      const auftragName = g.name;
+
+      // Schritt: Intro
+      steps.push({
+        type: 'intro',
+        groupIdx: gIdx,
+        auftragName,
+        title: 'Auftrag ' + (gIdx + 1) + ' von ' + groups.length,
+        hint: 'In MONAmC unter „Vorgangsliste" diesen Auftrag suchen und lang darauf drücken → „Auftragsstatus".'
+      });
+
+      // Schritt: Status x 3
+      [
+        { key: 'annehmen', label: 'Annehmen', icon: '✓' },
+        { key: 'anfahrt',  label: 'In Anfahrt', icon: '🚗' },
+        { key: 'vorOrt',   label: 'Vor Ort',    icon: '📍' }
+      ].forEach(s => {
+        steps.push({
+          type: 'status',
+          groupIdx: gIdx,
+          auftragName,
+          statusKey: s.key,
+          statusLabel: s.label,
+          statusIcon: s.icon,
+          hint: 'Lang drücken auf „' + s.label + '" in MONAmC.'
+        });
+      });
+
+      // Schritt: Zurueck zur Rueckmeldung
+      steps.push({
+        type: 'navigate',
+        groupIdx: gIdx,
+        auftragName,
+        title: 'Zur Rückmeldung',
+        hint: 'Zurück zum Hauptmenü, dann „Rückmeldung" → diesen Auftrag wählen → Tab „Zeiten".'
+      });
+
+      // Schritt: Zeit-Felder (nur die vorhandenen aus der Gruppe)
+      g.lines.forEach(line => {
+        // line.label ist "Anfahrt" / "Arbeit" / "Rückfahrt" / "Heimfahrt"
+        // line.time ist "HH:MM–HH:MM" (kann +1 enthalten)
+        const [vonStr, bisStr] = line.time.split('–');
+        const fieldMap = {
+          'Anfahrt':   { vonField: 'Anreise von',     bisField: 'Anreise bis' },
+          'Arbeit':    { vonField: 'Arbeitszeit von', bisField: 'Arbeitszeit bis' },
+          'Rückfahrt': { vonField: 'Rückreise von',   bisField: 'Rückreise bis' },
+          'Heimfahrt': { vonField: 'Rückreise von',   bisField: 'Rückreise bis' }
+        };
+        const fm = fieldMap[line.label];
+        if (!fm) return;
+        const dateLbl = formatDateMonaShort(state.date);
+
+        steps.push({
+          type: 'time',
+          groupIdx: gIdx,
+          auftragName,
+          fieldName: fm.vonField,
+          date: parseDateOffsetMona(state.date, vonStr),
+          time: stripDayOffset(vonStr),
+          hint: 'Lang drücken auf „' + fm.vonField + '" in MONAmC und Datum + Uhrzeit eintragen.'
+        });
+        steps.push({
+          type: 'time',
+          groupIdx: gIdx,
+          auftragName,
+          fieldName: fm.bisField,
+          date: parseDateOffsetMona(state.date, bisStr),
+          time: stripDayOffset(bisStr),
+          hint: 'Lang drücken auf „' + fm.bisField + '" in MONAmC und Datum + Uhrzeit eintragen.'
+        });
+      });
+
+      // Schritt: Rueckmeldetexte (anhand der Lines bestimmen welche relevant sind)
+      const auftragIdx = findAuftragIdxByGroupName(g.name);
+      const a = auftragIdx >= 0 ? state.auftraege[auftragIdx] : null;
+      const hasAnfahrt = g.lines.some(l => l.label === 'Anfahrt');
+      const hasArbeit = g.lines.some(l => l.label === 'Arbeit');
+      const hasRueck = g.lines.some(l => l.label === 'Rückfahrt' || l.label === 'Heimfahrt');
+      const textFields = [
+        hasAnfahrt && { key: 'anreise',    label: 'Anreise',    fieldName: 'Rückmeldetext – Anreise' },
+        hasArbeit  && { key: 'arbeit',     label: 'Arbeitszeit', fieldName: 'Rückmeldetext – Arbeitszeit' },
+        hasRueck   && { key: 'rueckreise', label: 'Rückreise',  fieldName: 'Rückmeldetext – Rückreise' }
+      ].filter(Boolean);
+      textFields.forEach(tf => {
+        steps.push({
+          type: 'text',
+          groupIdx: gIdx,
+          auftragName,
+          auftragIdx,
+          textKey: tf.key,
+          fieldName: tf.fieldName,
+          hint: 'Im Rückmeldetext-Bereich „' + tf.label + '" eintragen. Text vorbereiten und ins Feld in MONAmC einfügen.'
+        });
+      });
+    });
+
+    // Final-Screen
+    steps.push({ type: 'final' });
+    return steps;
+  }
+
+  function formatDateMonaShort(iso) {
+    const [y, m, d] = iso.split('-');
+    return d + '.' + m + '.' + y.slice(-2);
+  }
+  // Zeit-String kann Suffix " +N" enthalten — wir liefern reine "HH:MM" zurueck
+  function stripDayOffset(timeStr) {
+    return timeStr.replace(/\s\+\d+$/, '').trim();
+  }
+  // Gibt das verschobene Datum im MONAmC-Format zurueck (DD.MM.YY), berueck-
+  // sichtigt Tageswechsel (Suffix " +N").
+  function parseDateOffsetMona(baseISO, timeStrWithOffset) {
+    const m = (timeStrWithOffset || '').match(/\+(\d+)$/);
+    const offset = m ? parseInt(m[1], 10) : 0;
+    if (!offset) return formatDateMonaShort(baseISO);
+    const d = parseLocalDate(baseISO);
+    d.setDate(d.getDate() + offset);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(-2);
+    return dd + '.' + mm + '.' + yy;
+  }
+  function findAuftragIdxByGroupName(groupName) {
+    // Gruppen-Name ist "name" oder "name - SPLIT". Match auf Praefix gegen state.auftraege[i].name
+    for (let i = 0; i < state.auftraege.length; i++) {
+      const aname = state.auftraege[i].name;
+      if (groupName === aname || groupName.startsWith(aname + ' - ')) return i;
+    }
+    return -1;
+  }
+
+  function renderWalkStep() {
+    const step = _walkSteps[_walkIdx];
+    if (!step) return;
+    const total = _walkSteps.length;
+    const idxLabel = (_walkIdx + 1) + ' von ' + total;
+    document.getElementById('walkStepLabel').textContent = 'Schritt ' + idxLabel;
+    document.getElementById('walkProgressFill').style.width = Math.round((_walkIdx + 1) / total * 100) + '%';
+    document.getElementById('walkAuftragInfo').innerHTML = step.auftragName
+      ? 'Auftrag <span class="walk-auftrag-sap">' + escapeHtml(step.auftragName) + '</span>'
+      : '';
+
+    const body = document.getElementById('walkBody');
+    let html = '';
+    let speakText = '';
+
+    if (step.type === 'intro') {
+      html =
+        '<div class="walk-intro">' +
+          '<div class="walk-field-name">Nächster Auftrag</div>' +
+          '<div class="walk-intro-name">' + escapeHtml(step.auftragName) + '</div>' +
+          '<div class="walk-intro-meta">' + escapeHtml(step.title) + '</div>' +
+          '<div class="walk-hint"><span class="walk-hint-icon">✋</span>' + escapeHtml(step.hint) + '</div>' +
+        '</div>';
+      speakText = step.auftragName + '. ' + step.title;
+    } else if (step.type === 'navigate') {
+      html =
+        '<div class="walk-intro">' +
+          '<div class="walk-field-name">Bildschirm wechseln</div>' +
+          '<div class="walk-intro-name">' + escapeHtml(step.title) + '</div>' +
+          '<div class="walk-hint"><span class="walk-hint-icon">↩</span>' + escapeHtml(step.hint) + '</div>' +
+        '</div>';
+      speakText = step.title;
+    } else if (step.type === 'status') {
+      html =
+        '<div>' +
+          '<div class="walk-field-name">Status setzen</div>' +
+          '<div class="walk-status-pictogram">' +
+            '<span class="walk-status-icon">' + step.statusIcon + '</span>' +
+            '<span class="walk-status-label">' + escapeHtml(step.statusLabel) + '</span>' +
+          '</div>' +
+          '<div class="walk-hint"><span class="walk-hint-icon">✋</span>' + escapeHtml(step.hint) + '</div>' +
+        '</div>';
+      speakText = step.statusLabel;
+    } else if (step.type === 'time') {
+      html =
+        '<div>' +
+          '<div class="walk-field-name">' + escapeHtml(step.fieldName) + '</div>' +
+          '<div class="walk-value walk-value-date">' + escapeHtml(step.date) + '</div>' +
+          '<div class="walk-value walk-value-time">' + escapeHtml(step.time) + '</div>' +
+          '<div class="walk-hint"><span class="walk-hint-icon">✋</span>' + escapeHtml(step.hint) + '</div>' +
+        '</div>';
+      speakText = step.fieldName + '. ' + speakDateLong(step.date) + ', ' + speakTime(step.time);
+    } else if (step.type === 'text') {
+      const a = state.auftraege[step.auftragIdx];
+      const value = (a && a.rueckmeldetexte && a.rueckmeldetexte[step.textKey]) || '';
+      html =
+        '<div>' +
+          '<div class="walk-field-name">' + escapeHtml(step.fieldName) + '</div>' +
+          '<textarea class="walk-textarea" placeholder="Was wurde gemacht? Beschreibung eintippen …" ' +
+            'oninput="updateWalkText(' + step.auftragIdx + ', \'' + step.textKey + '\', this.value)">' +
+            escapeHtml(value) +
+          '</textarea>' +
+          '<button class="btn btn-outline walk-copy-btn" onclick="copyWalkText(' + step.auftragIdx + ', \'' + step.textKey + '\')">Kopieren</button>' +
+          '<div class="walk-hint"><span class="walk-hint-icon">✋</span>' + escapeHtml(step.hint) + '</div>' +
+        '</div>';
+      speakText = 'Rückmeldetext ' + step.fieldName.split('–')[1] + '. Bitte eintippen oder kopieren.';
+    } else if (step.type === 'final') {
+      html =
+        '<div class="walk-final">' +
+          '<div class="walk-final-icon">✓</div>' +
+          '<div class="walk-final-title">Alles übertragen!</div>' +
+          '<div class="walk-final-text">Bitte in MONAmC nun für jeden Auftrag <strong>speichern</strong>.<br>Dann „Neuer Tag starten" in der App.</div>' +
+        '</div>';
+      speakText = 'Alles fertig. In MONAmC speichern.';
+    }
+    body.innerHTML = html;
+
+    // Buttons aktualisieren
+    document.getElementById('walkPrevBtn').disabled = (_walkIdx === 0);
+    document.getElementById('walkPrevBtn').style.opacity = (_walkIdx === 0) ? '0.4' : '1';
+    document.getElementById('walkNextBtn').textContent = (_walkIdx === _walkSteps.length - 1)
+      ? '✓ Fertig'
+      : '✓ Erledigt — weiter';
+
+    // Voice
+    if (_walkVoiceOn && speakText) speak(speakText);
+
+    // Position speichern (auto-resume bei Reopen)
+    state.walkMode = { stepIdx: _walkIdx };
+    saveState();
+  }
+
+  function walkNext() {
+    if (_walkIdx >= _walkSteps.length - 1) {
+      closeWalkMode();
+      return;
+    }
+    _walkIdx++;
+    renderWalkStep();
+  }
+  function walkPrev() {
+    if (_walkIdx > 0) {
+      _walkIdx--;
+      renderWalkStep();
+    }
+  }
+  function updateWalkText(auftragIdx, key, value) {
+    const a = state.auftraege[auftragIdx];
+    if (!a) return;
+    if (!a.rueckmeldetexte) a.rueckmeldetexte = { anreise: '', arbeit: '', rueckreise: '' };
+    a.rueckmeldetexte[key] = value;
+    saveState();
+  }
+  function copyWalkText(auftragIdx, key) {
+    const a = state.auftraege[auftragIdx];
+    if (!a || !a.rueckmeldetexte) return;
+    const v = a.rueckmeldetexte[key] || '';
+    if (!v) { showToast('Text ist leer'); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(v).then(() => showToast('Text kopiert ✓'), () => fallbackCopy(v));
+    } else fallbackCopy(v);
+  }
+  function toggleWalkVoice() {
+    _walkVoiceOn = !_walkVoiceOn;
+    document.getElementById('walkVoiceBtn').classList.toggle('active', _walkVoiceOn);
+    if (_walkVoiceOn) {
+      // direkt aktuellen Schritt vorlesen
+      const step = _walkSteps[_walkIdx];
+      if (step) renderWalkStep();
+    } else if ('speechSynthesis' in window) {
+      speechSynthesis.cancel();
+    }
+  }
+  // Web Speech: Datum/Zeit verstaendlich aussprechen
+  function speak(text) {
+    if (!('speechSynthesis' in window)) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'de-DE';
+      u.rate = 0.95;
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  function speakDateLong(dateStr) {
+    // "18.05.26" → "achtzehnter Mai sechsundzwanzig" — Browser-Stimme macht das normalerweise gut
+    return dateStr;
+  }
+  function speakTime(timeStr) {
+    // "11:49" → "elf Uhr neunundvierzig"
+    const m = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) return timeStr;
+    return m[1] + ' Uhr ' + m[2];
+  }
+
   /* ===== Über-Modal ===== */
   function openAboutModal() {
     document.getElementById('aboutVersion').textContent = APP_VERSION;
@@ -3612,7 +4129,10 @@
         reiseAE: existing ? existing.reiseAE : 0,
         rueckAktiv: existing ? existing.rueckAktiv : false,
         rueckAE: existing ? existing.rueckAE : 0,
-        workEntries: workEntries
+        workEntries: workEntries,
+        rueckmeldetexte: existing && existing.rueckmeldetexte
+          ? existing.rueckmeldetexte
+          : { anreise: '', arbeit: '', rueckreise: '' }
       };
     });
     state.auftraege = newAuftraege;
