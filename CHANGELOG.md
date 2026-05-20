@@ -7,6 +7,14 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.23.1] — 2026-05-20
+
+### Geändert
+- **Eigene Splits jetzt bis 999** statt 99 — `isValidSplit()` akzeptiert 1–999.
+- Eingabefeld-Placeholder, Max-Attribut und Fehler-Toast entsprechend angepasst.
+
+---
+
 ## [1.23.0] — 2026-05-20
 
 ### Hinzugefügt

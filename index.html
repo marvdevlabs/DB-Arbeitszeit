@@ -2091,17 +2091,17 @@
 <div id="print-area" aria-hidden="true"></div>
 
 <script>
-  const APP_VERSION = '1.23.0';
+  const APP_VERSION = '1.23.1';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
   const LIMIT10H_MIN = 600;      // 10h
   // Standard-Splits: als Schnellwahl-Buttons in Step 4.
-  // Eigene Splits werden zusaetzlich pro Auftrag manuell eintragbar (1-99 erlaubt).
+  // Eigene Splits werden zusaetzlich pro Auftrag manuell eintragbar (1-999 erlaubt).
   const STANDARD_SPLITS = [10, 11, 20, 29, 40, 50];
   const SPLIT_OPTIONS = STANDARD_SPLITS; // Alias fuer Abwaerts-Kompat
   function isValidSplit(v) {
-    return typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 99;
+    return typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 999;
   }
   function isCustomSplit(v) {
     return isValidSplit(v) && !STANDARD_SPLITS.includes(v);
@@ -4220,8 +4220,8 @@
           </div>
           ${customSplits.length > 0 ? `<div class="splits-custom-row">${customPillsHtml}</div>` : ''}
           <div class="splits-custom-input-row">
-            <input type="number" min="1" max="99" inputmode="numeric" pattern="[0-9]*"
-              class="splits-custom-input" placeholder="Eigener Split (1–99)"
+            <input type="number" min="1" max="999" inputmode="numeric" pattern="[0-9]*"
+              class="splits-custom-input" placeholder="Eigener Split (1–999)"
               id="customSplitInput-${i}"
               onkeydown="if (event.key === 'Enter') { event.preventDefault(); addCustomSplit(${i}); }">
             <button type="button" class="split-add-btn" onclick="addCustomSplit(${i})">+ Hinzufügen</button>
@@ -4236,7 +4236,7 @@
     if (!inp) return;
     const v = parseInt(inp.value, 10);
     if (!isValidSplit(v)) {
-      showToast('Split muss zwischen 1 und 99 liegen');
+      showToast('Split muss zwischen 1 und 999 liegen');
       inp.value = '';
       inp.focus();
       return;

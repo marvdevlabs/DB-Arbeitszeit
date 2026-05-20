@@ -2,7 +2,7 @@
 
 Single-File-Webapp zum täglichen Erfassen der Arbeitszeit in **AE (Arbeitseinheiten, 1 AE = 10 min)**. Mobile-first, offline-fähig, keine Server-Komponente — alle Daten bleiben im Browser.
 
-**Version:** 1.23.0 · **Live:** [marvdevlabs.github.io/arbeitszeit](https://marvdevlabs.github.io/arbeitszeit/) · [Vollständiges Changelog](CHANGELOG.md)
+**Version:** 1.23.1 · **Live:** [marvdevlabs.github.io/arbeitszeit](https://marvdevlabs.github.io/arbeitszeit/) · [Vollständiges Changelog](CHANGELOG.md)
 
 <p align="center">
   <img src="docs/screenshots/06-step5-full.png" alt="Arbeitszeit-Rechner – Übersicht in Step 5" width="380">
@@ -18,7 +18,7 @@ Single-File-Webapp zum täglichen Erfassen der Arbeitszeit in **AE (Arbeitseinhe
 - **Alle 16 Bundesländer** wählbar (Pflichtfeld, bleibt persistent)
 - **Bereitschaft** Ja/Nein legt Standard-Startzeit fest (09:00 / 06:30)
 - **Datum frei wählbar** — auch nachträgliches Erfassen vergessener Tage
-- **Splits** pro Auftrag — 6 Standard-Buttons (10, 11, 20, 29, 40, 50) plus beliebige eigene Splits (1–99) via Eingabefeld
+- **Splits** pro Auftrag — 6 Standard-Buttons (10, 11, 20, 29, 40, 50) plus beliebige eigene Splits (1–999) via Eingabefeld
 - **Aufträge umsortieren** mit ▲ ▼ Pfeilen — z.B. wenn die MONAmC-SAP-Sortierung nicht zum tatsächlichen Tagesablauf passt
 - **LRE-Stufen** (1, 2, 3) und **Custom-Start-Uhrzeit** pro Auftrag bei Bereitschaft
 - **9-Slide-Onboarding** für Erst-Nutzer, jederzeit über das Über-Modal erneut abrufbar
