@@ -709,6 +709,95 @@
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
+  /* ===== Bereitschaft: LRE-Stufe + Custom-Start pro Auftrag ===== */
+  .auftrag-extras {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px dashed var(--border);
+    align-items: center;
+  }
+  .lre-group {
+    display: inline-flex; gap: 4px;
+    align-items: center;
+  }
+  .lre-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-right: 4px;
+  }
+  .lre-btn {
+    padding: 4px 9px;
+    border: 1.5px solid var(--border-input);
+    background: var(--bg-input);
+    color: var(--text-secondary);
+    border-radius: 5px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.12s;
+  }
+  .lre-btn:hover { border-color: var(--db-red); color: var(--db-red); }
+  .lre-btn.active {
+    background: linear-gradient(180deg, var(--db-red) 0%, var(--db-red-dark) 100%);
+    color: #fff; border-color: var(--db-red);
+    box-shadow: 0 1px 4px rgba(236,0,22,0.25);
+  }
+  .lre-btn[title] { cursor: help; }
+  .custom-start {
+    display: inline-flex; gap: 6px; align-items: center;
+    margin-left: auto;
+  }
+  .custom-start label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin: 0;
+  }
+  .custom-start input[type="time"] {
+    padding: 4px 6px;
+    border: 1.5px solid var(--border-input);
+    border-radius: 5px;
+    background: var(--bg-input);
+    color: var(--text-main);
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+    font-family: inherit;
+    width: auto;
+  }
+  .custom-start input[type="time"]:focus {
+    outline: none;
+    border-color: var(--db-red);
+    box-shadow: 0 0 0 2px rgba(236,0,22,0.14);
+  }
+  .custom-start-clear {
+    background: transparent; border: none;
+    color: var(--text-muted); cursor: pointer;
+    font-size: 14px; padding: 2px 6px;
+    border-radius: 4px; font-family: inherit;
+  }
+  .custom-start-clear:hover { color: var(--db-red); background: rgba(236,0,22,0.08); }
+
+  /* Mini-Badge fuer LRE in Protokoll-Gruppen-Headern */
+  .protokoll-lre-badge,
+  .p-lre-badge {
+    display: inline-block;
+    background: var(--db-red);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-left: 6px;
+    vertical-align: middle;
+    letter-spacing: 0.3px;
+  }
+
   /* ===== Tag-Transfer (QR + URL) ===== */
   .transfer-section {
     margin-top: 14px;
@@ -1791,7 +1880,7 @@
 <div id="print-area" aria-hidden="true"></div>
 
 <script>
-  const APP_VERSION = '1.18.4';
+  const APP_VERSION = '1.19.0';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -1911,23 +2000,26 @@
     return isSpecialPauseCase() ? 0 : FIX_ABZUG_MIN;
   }
 
-  // Pause-Berechnung:
-  //
-  // Standardfall (Werktag, keine Bereitschaft):
-  //   Brutto = Arbeit + 60 (An/Ab) + Pause
+  // Pause-Berechnung: immer 0 / 30 / 45 min basierend auf der Arbeitszeit.
   //   < 6h Arbeit  → 0 min Pause
   //   6h–9h Arbeit → 30 min Pause
   //   > 9h Arbeit  → 45 min Pause
-  //   → Brutto-Schwellen: < 420 → 0, ≤ 630 → 30, > 630 → 45
   //
-  // Spezialfall (Bereitschaft / Wochenende / Feiertag):
-  //   Kein An-/Abfahrt-Abzug → Brutto = Arbeit + Pause
-  //   ≤ 6h Brutto → 0 min Pause
-  //   > 6h Brutto → 30 min Pause (kein 45-min-Sprung)
+  // Die Brutto-Schwellen verschieben sich abhängig davon, ob die
+  // An-/Abfahrt-60 min mit abgezogen wird (Werktag) oder nicht (WE/Feiertag):
+  //
+  //   Werktag (Brutto = Arbeit + 60 + Pause):
+  //     < 420  → 0  ·  ≤ 630  → 30  ·  > 630 → 45
+  //   WE/Feiertag (Brutto = Arbeit + Pause):
+  //     < 360  → 0  ·  ≤ 570  → 30  ·  > 570 → 45
   function computePauseMin(bruttoMin) {
     if (isSpecialPauseCase()) {
-      return bruttoMin > 360 ? 30 : 0;
+      // Kein An-/Abfahrt-Abzug
+      if (bruttoMin < 360) return 0;
+      if (bruttoMin <= 570) return 30;
+      return 45;
     }
+    // Werktag mit 60 min An-/Abfahrt-Abzug
     if (bruttoMin < 420) return 0;
     if (bruttoMin <= 630) return 30;
     return 45;
@@ -3583,7 +3675,12 @@
         reiseAE: existing ? existing.reiseAE : 0,
         rueckAktiv: existing ? existing.rueckAktiv : false,
         rueckAE: existing ? existing.rueckAE : 0,
-        workEntries: workEntries
+        workEntries: workEntries,
+        // Bereitschaft: LRE-Stufe (1=Ersteinsatz, 2=weitere Einsaetze, 3=telefonisch)
+        lre: existing ? (existing.lre || null) : null,
+        // Optionaler Custom-Start "HH:MM" — ueberschreibt die Standard-Verkettung
+        // (sinnvoll z.B. bei Bereitschaft mit Lücke zwischen Einsaetzen)
+        customStart: existing ? (existing.customStart || null) : null
       };
     });
     state.auftraege = newAuftraege;
@@ -3634,11 +3731,74 @@
   const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmtDuration = m => Math.floor(Math.abs(m) / 60) + 'h ' + String(Math.abs(m) % 60).padStart(2, '0') + 'min';
 
+  /* ===== Bereitschaft: LRE + Custom-Start ===== */
+  // Pro Auftrag eine kleine Extra-Zeile mit LRE-Wahl + optionalem Custom-Start
+  function renderAuftragExtras(i, a) {
+    const lre = a.lre || null;
+    const cs = a.customStart || '';
+    return '<div class="auftrag-extras">' +
+      '<div class="lre-group">' +
+        '<span class="lre-label">LRE:</span>' +
+        '<button type="button" class="lre-btn' + (lre === 1 ? ' active' : '') + '" title="Ersteinsatz" onclick="setLre(' + i + ', 1)">1</button>' +
+        '<button type="button" class="lre-btn' + (lre === 2 ? ' active' : '') + '" title="weitere Einsätze" onclick="setLre(' + i + ', 2)">2</button>' +
+        '<button type="button" class="lre-btn' + (lre === 3 ? ' active' : '') + '" title="telefonisch" onclick="setLre(' + i + ', 3)">3</button>' +
+        (lre ? '<button type="button" class="custom-start-clear" title="LRE entfernen" onclick="setLre(' + i + ', null)">✕</button>' : '') +
+      '</div>' +
+      '<div class="custom-start">' +
+        '<label for="cs-' + i + '">ab</label>' +
+        '<input type="time" id="cs-' + i + '" value="' + escapeHtml(cs) + '" placeholder="—" onchange="setCustomStart(' + i + ', this.value)">' +
+        (cs ? '<button type="button" class="custom-start-clear" title="Eigene Startzeit entfernen" onclick="clearCustomStart(' + i + ')">✕</button>' : '') +
+      '</div>' +
+    '</div>';
+  }
+  function setLre(i, val) {
+    const a = state.auftraege[i];
+    if (!a) return;
+    a.lre = (val === 1 || val === 2 || val === 3) ? val : null;
+    saveState();
+    renderAuftraege();
+  }
+  function setCustomStart(i, value) {
+    const a = state.auftraege[i];
+    if (!a) return;
+    if (value && /^\d{1,2}:\d{2}$/.test(value)) a.customStart = value;
+    else a.customStart = null;
+    saveState();
+    renderAuftraege();
+  }
+  function clearCustomStart(i) {
+    const a = state.auftraege[i];
+    if (!a) return;
+    a.customStart = null;
+    saveState();
+    renderAuftraege();
+  }
+
+  // Summe aller aktiven Auftragsdauern (Reise + Arbeit + Rueck), ohne Luecken
+  // zwischen Auftraegen. Dadurch zaehlt freie Bereitschafts-Wartezeit nicht
+  // zum Brutto/Arbeitszeit.
+  function totalActiveMinutes(times) {
+    if (!times || !times.length) return 0;
+    let sum = 0;
+    for (const t of times) sum += Math.max(0, t.rueckEnd - t.reiseStart);
+    return sum;
+  }
+
   function calcTimes() {
     let current = parseStartMinutes();
     const result = [];
     for (let i = 0; i < state.auftraege.length; i++) {
       const a = state.auftraege[i];
+      // Custom Start anwenden: setzt 'current' auf die naechste passende Uhrzeit
+      // (wenn die schon vorbei waere, automatisch +1 Tag)
+      if (a.customStart && /^\d{1,2}:\d{2}$/.test(a.customStart)) {
+        const [ch, cm] = a.customStart.split(':').map(Number);
+        const clockMin = ch * 60 + cm;
+        const dayBase = Math.floor(current / 1440) * 1440;
+        let newCurrent = dayBase + clockMin;
+        if (newCurrent < current) newCurrent += 1440;
+        current = newCurrent;
+      }
       const reiseMin = a.reiseAktiv ? aeToMinutes(a.reiseAE) : 0;
       const rueckMin = a.rueckAktiv ? aeToMinutes(a.rueckAE) : 0;
       const reiseStart = current;
@@ -3716,6 +3876,7 @@
             ${a.rueckAktiv ? '' : 'disabled'} onchange="updateAE(${i}, 'rueckAE', this.value)">
           <div class="minutes-display">${a.rueckAktiv ? aeToMinutes(a.rueckAE) + ' min' : '—'}</div>
         </div>
+        ${renderAuftragExtras(i, a)}
       `;
       container.appendChild(card);
     });
@@ -3774,7 +3935,7 @@
   function renderSummary(times) {
     const startMin = parseStartMinutes();
     const endMin = times.length ? times[times.length - 1].rueckEnd : startMin;
-    const bruttoMin = endMin - startMin;
+    const bruttoMin = totalActiveMinutes(times);
     const { pauseMin, fixAbzug } = computeAbzug(bruttoMin);
     const nettoMin = Math.max(0, bruttoMin - fixAbzug - pauseMin);
     const { totalReise, totalArbeit, totalRueck, totalAE } = calcTotals();
@@ -3916,7 +4077,7 @@
           });
         }
 
-        if (lines.length > 0) groups.push({ name: groupName, lines });
+        if (lines.length > 0) groups.push({ name: groupName, lines, lre: a.lre || null });
       });
     });
     return groups;
@@ -3929,7 +4090,8 @@
         `<div class="protokoll-line"><span class="protokoll-label">${escapeHtml(l.label)}</span><span class="protokoll-time">${timeWithDaySup(l.time)}</span></div>`
       ).join('');
       const sep = idx < groups.length - 1 ? '<hr class="protokoll-separator">' : '';
-      return `<div class="protokoll-group"><div class="protokoll-group-header">${escapeHtml(g.name)}</div>${linesHtml}</div>${sep}`;
+      const lreBadge = g.lre ? `<span class="protokoll-lre-badge">LRE ${g.lre}</span>` : '';
+      return `<div class="protokoll-group"><div class="protokoll-group-header">${escapeHtml(g.name)}${lreBadge}</div>${linesHtml}</div>${sep}`;
     }).join('');
     document.getElementById('protokoll').innerHTML = html;
   }
@@ -3940,7 +4102,7 @@
     const { totalReise, totalArbeit, totalRueck, totalAE } = calcTotals();
     const startMin = parseStartMinutes();
     const endMin = times.length ? times[times.length - 1].rueckEnd : startMin;
-    const bruttoMin = endMin - startMin;
+    const bruttoMin = totalActiveMinutes(times);
     const { pauseMin, fixAbzug } = computeAbzug(bruttoMin);
     const nettoMin = Math.max(0, bruttoMin - fixAbzug - pauseMin);
     const plusMin = nettoMin - SOLL_MIN;
@@ -3959,7 +4121,8 @@
     out.push('Ende:  ' + minutesToHHMM(endMin));
     out.push('');
     groups.forEach((g, idx) => {
-      out.push(g.name);
+      const lreSuffix = g.lre ? '   [LRE ' + g.lre + ']' : '';
+      out.push(g.name + lreSuffix);
       g.lines.forEach(l => out.push('  ' + (l.label + ':').padEnd(12) + l.time));
       if (idx < groups.length - 1) out.push('');
     });
@@ -4006,7 +4169,7 @@
     const { totalReise, totalArbeit, totalRueck, totalAE } = calcTotals();
     const startMin = parseStartMinutes();
     const endMin = times.length ? times[times.length - 1].rueckEnd : startMin;
-    const bruttoMin = endMin - startMin;
+    const bruttoMin = totalActiveMinutes(times);
     const { abzugMin, pauseMin, fixAbzug } = computeAbzug(bruttoMin);
     const nettoMin = Math.max(0, bruttoMin - fixAbzug - pauseMin);
     const plusMin = nettoMin - SOLL_MIN;
@@ -4048,7 +4211,8 @@
     html += '<div class="p-section-title">Protokoll</div>';
     html += '<div class="p-protokoll">';
     groups.forEach(g => {
-      html += '<div class="p-group"><div class="p-group-name">' + escapeHtml(g.name) + '</div>';
+      const lreBadgeP = g.lre ? '<span class="p-lre-badge">LRE ' + g.lre + '</span>' : '';
+      html += '<div class="p-group"><div class="p-group-name">' + escapeHtml(g.name) + lreBadgeP + '</div>';
       g.lines.forEach(l => {
         html += '<div class="p-line"><span class="lbl">' + escapeHtml(l.label) + '</span><span class="val">' + timeWithDaySup(l.time) + '</span></div>';
       });
