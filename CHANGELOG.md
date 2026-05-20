@@ -7,6 +7,21 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.23.0] — 2026-05-20
+
+### Hinzugefügt
+- **Eigene Splits** pro Auftrag — zusätzlich zu den 6 Standard-Splits (10, 11, 20, 29, 40, 50) können beliebige Werte zwischen 1 und 99 eingegeben werden.
+- Eingabefeld + „+ Hinzufügen"-Button pro Auftrags-Karte in Schritt 4.
+- Custom-Splits erscheinen als **lila Pills mit ×** (zum Entfernen), damit sie von Standard-Splits visuell unterscheidbar sind.
+- Validation: Werte außerhalb 1–99 oder Duplikate werden mit Toast abgelehnt.
+- OCR-Parser und Sanitizer akzeptieren ebenfalls Werte 1–99 (vorher nur Standard-Liste).
+
+### Geändert
+- `SPLIT_OPTIONS` aufgeteilt in `STANDARD_SPLITS` + `isValidSplit(v)` (1–99).
+- `isCustomSplit(v)` als Helper für Rendering.
+
+---
+
 ## [1.22.0] — 2026-05-20
 
 ### Hinzugefügt
