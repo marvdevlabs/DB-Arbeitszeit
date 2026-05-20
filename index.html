@@ -1881,7 +1881,7 @@
 <div id="print-area" aria-hidden="true"></div>
 
 <script>
-  const APP_VERSION = '1.20.0';
+  const APP_VERSION = '1.20.1';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -2043,6 +2043,43 @@
   };
   let currentStep = 1;
 
+  /* ===== Schema-Validation (defensiv) =====
+   * Stellt sicher dass externe Daten (LocalStorage, Imports, URLs) ein
+   * konsistentes, sicheres Format haben, bevor sie in den globalen state
+   * uebernommen werden. Verhindert "tote App"-Zustaende bei kaputtem JSON.
+   */
+  const VALID_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  const VALID_TIME_RE = /^\d{2}:\d{2}$/;
+  function sanitizeWorkEntry(e) {
+    if (!e || typeof e !== 'object') return null;
+    const split = (e.split === null || (typeof e.split === 'number' && SPLIT_OPTIONS.includes(e.split))) ? e.split : null;
+    const label = typeof e.label === 'string' ? e.label.slice(0, 80) : (split !== null ? 'Split ' + split : 'Arbeit');
+    const ae = (typeof e.ae === 'number' && isFinite(e.ae) && e.ae >= 0) ? Math.round(e.ae * 10) / 10 : 0;
+    return { split, label, ae };
+  }
+  function sanitizeAuftrag(a, i) {
+    if (!a || typeof a !== 'object') a = {};
+    const name = typeof a.name === 'string' ? a.name.slice(0, 120) : ('Auftrag ' + (i + 1));
+    const lastAuto = typeof a._lastAutoName === 'string' ? a._lastAutoName.slice(0, 120) : name;
+    const reiseAktiv = a.reiseAktiv === true;
+    const rueckAktiv = a.rueckAktiv === true;
+    const reiseAE = (typeof a.reiseAE === 'number' && isFinite(a.reiseAE) && a.reiseAE >= 0) ? Math.round(a.reiseAE * 10) / 10 : 0;
+    const rueckAE = (typeof a.rueckAE === 'number' && isFinite(a.rueckAE) && a.rueckAE >= 0) ? Math.round(a.rueckAE * 10) / 10 : 0;
+    const workEntries = Array.isArray(a.workEntries)
+      ? a.workEntries.map(sanitizeWorkEntry).filter(Boolean)
+      : [{ split: null, label: 'Arbeit', ae: 0 }];
+    if (workEntries.length === 0) workEntries.push({ split: null, label: 'Arbeit', ae: 0 });
+    return { name, _lastAutoName: lastAuto, reiseAktiv, reiseAE, rueckAktiv, rueckAE, workEntries };
+  }
+  function sanitizeSapEntry(s) {
+    if (!s || typeof s !== 'object') return { sap: '', splits: [] };
+    const sap = typeof s.sap === 'string' ? s.sap.slice(0, 32) : '';
+    const splits = Array.isArray(s.splits)
+      ? s.splits.filter(v => typeof v === 'number' && SPLIT_OPTIONS.includes(v))
+      : [];
+    return { sap, splits };
+  }
+
   /* ===== LocalStorage ===== */
   function saveState() {
     try {
@@ -2068,16 +2105,26 @@
       if (!raw) return null;
       const d = JSON.parse(raw);
       if (typeof d !== 'object' || !d) return null;
-      if (typeof d.bundesland === 'string') state.bundesland = d.bundesland;
-      if (typeof d.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.date)) state.date = d.date;
-      if (d.bereitschaft !== undefined) state.bereitschaft = d.bereitschaft;
-      if (typeof d.anzahl === 'number') state.anzahl = d.anzahl;
-      if (typeof d.startzeit === 'string') state.startzeit = d.startzeit;
-      if (Array.isArray(d.sapNumbers)) state.sapNumbers = d.sapNumbers;
-      if (Array.isArray(d.auftraege)) state.auftraege = d.auftraege;
+      // Bundesland: nur 2-Zeichen-Codes aus unserer Liste akzeptieren
+      if (typeof d.bundesland === 'string' && BUNDESLAENDER.some(b => b.code === d.bundesland)) state.bundesland = d.bundesland;
+      // Datum: strikt YYYY-MM-DD
+      if (typeof d.date === 'string' && VALID_DATE_RE.test(d.date)) state.date = d.date;
+      // Bereitschaft: boolean oder null
+      if (d.bereitschaft === true || d.bereitschaft === false || d.bereitschaft === null) state.bereitschaft = d.bereitschaft;
+      // Anzahl: positive int 1..50
+      if (typeof d.anzahl === 'number' && d.anzahl >= 1 && d.anzahl <= 50 && Number.isInteger(d.anzahl)) state.anzahl = d.anzahl;
+      // Startzeit: HH:MM
+      if (typeof d.startzeit === 'string' && VALID_TIME_RE.test(d.startzeit)) state.startzeit = d.startzeit;
+      // SAP & Auftraege: tief sanitizen
+      if (Array.isArray(d.sapNumbers)) state.sapNumbers = d.sapNumbers.map(sanitizeSapEntry);
+      if (Array.isArray(d.auftraege)) state.auftraege = d.auftraege.map(sanitizeAuftrag);
       if (typeof d.tenHourAck === 'boolean') state.tenHourAck = d.tenHourAck;
-      return (d.currentStep >= 1 && d.currentStep <= 5) ? d.currentStep : 1;
-    } catch (e) { return null; }
+      const step = d.currentStep;
+      return (typeof step === 'number' && step >= 1 && step <= 5) ? step : 1;
+    } catch (e) {
+      console.warn('loadState: ungueltige Daten, ueberspringe.', e);
+      return null;
+    }
   }
   function resetAll() {
     archiveCurrentDay();
@@ -2111,7 +2158,16 @@
       const raw = localStorage.getItem(HISTORY_KEY);
       if (!raw) return {};
       const obj = JSON.parse(raw);
-      return (typeof obj === 'object' && obj) ? obj : {};
+      if (typeof obj !== 'object' || !obj) return {};
+      // Filtern: nur valide YYYY-MM-DD-Keys mit Object-Wert
+      const clean = {};
+      for (const k in obj) {
+        if (!VALID_DATE_RE.test(k)) continue;
+        const v = obj[k];
+        if (!v || typeof v !== 'object') continue;
+        clean[k] = v;
+      }
+      return clean;
     } catch (e) { return {}; }
   }
   function saveHistory(history) {
@@ -2417,10 +2473,17 @@
   }
 
   async function runOcr(file) {
+    // Race-Schutz: wenn User das Modal mittendrin schliesst, soll der spaete
+    // OCR-Callback nicht in den DOM schreiben (sonst Errors / Flicker).
+    const modal = document.getElementById('modalOcr');
+    const isOpen = () => modal && !modal.classList.contains('hidden');
     try {
-      const progressEl = document.getElementById('ocrProgress');
-      const updateProgress = msg => { if (document.getElementById('ocrProgress')) document.getElementById('ocrProgress').textContent = msg; };
+      const updateProgress = msg => {
+        const el = document.getElementById('ocrProgress');
+        if (el && isOpen()) el.textContent = msg;
+      };
       const text = await runOcrOnImage(file, updateProgress);
+      if (!isOpen()) return; // User hat abgebrochen
       const isMona = looksLikeMonaScreenshot(text);
       const orders = parseAuftragsText(text);
       if (!isMona && orders.length === 0) {
@@ -2430,10 +2493,13 @@
       }
     } catch (err) {
       console.error('OCR failed:', err);
-      document.getElementById('ocrBody').innerHTML =
+      if (!isOpen()) return;
+      const body = document.getElementById('ocrBody');
+      const actions = document.getElementById('ocrActions');
+      if (body) body.innerHTML =
         '<p style="color:var(--db-red);">Erkennung fehlgeschlagen.</p>' +
-        '<p style="font-size:12.5px;color:var(--text-muted);">' + (err && err.message ? err.message : 'Unbekannter Fehler.') + '</p>';
-      document.getElementById('ocrActions').innerHTML =
+        '<p style="font-size:12.5px;color:var(--text-muted);">' + escapeHtml(err && err.message ? err.message : 'Unbekannter Fehler.') + '</p>';
+      if (actions) actions.innerHTML =
         '<button class="btn btn-secondary" onclick="closeOcrModal()">Schließen</button>' +
         '<button class="btn" onclick="resetOcrModal()">Nochmal</button>';
     }
@@ -3321,17 +3387,19 @@
     try {
       // Aktuellen Tag zuerst archivieren (falls Inhalte)
       try { archiveCurrentDay(); } catch (e) {}
-      if (typeof data.date === 'string') state.date = data.date;
-      if (typeof data.bereitschaft === 'boolean' || data.bereitschaft === null) state.bereitschaft = data.bereitschaft;
-      if (typeof data.startzeit === 'string') state.startzeit = data.startzeit;
-      if (typeof data.anzahl === 'number') state.anzahl = data.anzahl;
-      if (Array.isArray(data.sapNumbers)) state.sapNumbers = data.sapNumbers;
+      // Striktes Validation aller Felder via Sanitizer
+      if (typeof data.date === 'string' && VALID_DATE_RE.test(data.date)) state.date = data.date;
+      if (data.bereitschaft === true || data.bereitschaft === false || data.bereitschaft === null) state.bereitschaft = data.bereitschaft;
+      if (typeof data.startzeit === 'string' && VALID_TIME_RE.test(data.startzeit)) state.startzeit = data.startzeit;
+      if (typeof data.anzahl === 'number' && data.anzahl >= 1 && data.anzahl <= 50 && Number.isInteger(data.anzahl)) state.anzahl = data.anzahl;
+      if (Array.isArray(data.sapNumbers)) state.sapNumbers = data.sapNumbers.map(sanitizeSapEntry);
       if (Array.isArray(data.auftraege)) {
-        // _lastAutoName fehlt im Payload — neu berechnen so dass Name-Override-Detection funktioniert
         state.auftraege = data.auftraege.map((a, i) => {
+          const clean = sanitizeAuftrag(a, i);
+          // _lastAutoName neu berechnen
           const sapEntry = state.sapNumbers[i];
-          const autoName = sapEntry ? buildAutoName(sapEntry, i) : (a.name || 'Auftrag ' + (i + 1));
-          return Object.assign({}, a, { _lastAutoName: autoName });
+          clean._lastAutoName = sapEntry ? buildAutoName(sapEntry, i) : (clean.name || 'Auftrag ' + (i + 1));
+          return clean;
         });
       }
       saveState();
@@ -3380,20 +3448,28 @@
         const data = JSON.parse(e.target.result);
         if (typeof data !== 'object' || !data) throw new Error('Invalid');
         if (data.state && typeof data.state === 'object') {
-          if (typeof data.state.bundesland === 'string') state.bundesland = data.state.bundesland;
-          if (typeof data.state.date === 'string') state.date = data.state.date;
-          if (typeof data.state.bereitschaft === 'boolean' || data.state.bereitschaft === null) state.bereitschaft = data.state.bereitschaft;
-          if (typeof data.state.anzahl === 'number') state.anzahl = data.state.anzahl;
-          if (typeof data.state.startzeit === 'string') state.startzeit = data.state.startzeit;
-          if (Array.isArray(data.state.sapNumbers)) state.sapNumbers = data.state.sapNumbers;
-          if (Array.isArray(data.state.auftraege)) state.auftraege = data.state.auftraege;
-          if (typeof data.state.tenHourAck === 'boolean') state.tenHourAck = data.state.tenHourAck;
+          const s = data.state;
+          if (typeof s.bundesland === 'string' && BUNDESLAENDER.some(b => b.code === s.bundesland)) state.bundesland = s.bundesland;
+          if (typeof s.date === 'string' && VALID_DATE_RE.test(s.date)) state.date = s.date;
+          if (s.bereitschaft === true || s.bereitschaft === false || s.bereitschaft === null) state.bereitschaft = s.bereitschaft;
+          if (typeof s.anzahl === 'number' && s.anzahl >= 1 && s.anzahl <= 50 && Number.isInteger(s.anzahl)) state.anzahl = s.anzahl;
+          if (typeof s.startzeit === 'string' && VALID_TIME_RE.test(s.startzeit)) state.startzeit = s.startzeit;
+          if (Array.isArray(s.sapNumbers)) state.sapNumbers = s.sapNumbers.map(sanitizeSapEntry);
+          if (Array.isArray(s.auftraege)) state.auftraege = s.auftraege.map(sanitizeAuftrag);
+          if (typeof s.tenHourAck === 'boolean') state.tenHourAck = s.tenHourAck;
           saveState();
         }
         if (data.history && typeof data.history === 'object') {
-          saveHistory(data.history);
+          // Auch hier nur valide Date-Keys uebernehmen
+          const cleanHistory = {};
+          for (const k in data.history) {
+            if (VALID_DATE_RE.test(k) && data.history[k] && typeof data.history[k] === 'object') {
+              cleanHistory[k] = data.history[k];
+            }
+          }
+          saveHistory(cleanHistory);
         }
-        if (typeof data.theme === 'string') {
+        if (typeof data.theme === 'string' && (data.theme === 'light' || data.theme === 'dark')) {
           applyTheme(data.theme);
           try { localStorage.setItem(THEME_KEY, data.theme); } catch (e) {}
         }
