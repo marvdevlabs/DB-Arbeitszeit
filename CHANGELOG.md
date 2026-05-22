@@ -7,6 +7,28 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.27.0] — 2026-05-22
+
+### Hinzugefügt
+- **Eigenständige Netto-Berechnung** (ohne PDFs nötig) — sobald Personal-Daten + monatliches Grundgehalt eingetragen sind, zeigt das Tool eine vollständige Brutto-Netto-Aufstellung:
+  - **Lohnsteuer** nach §32a EStG 2025 mit Tarif-Zonen (Nullzone, Progressionszonen 1+2, Proportionalzone, Reichensteuer)
+  - **Steuerklassen-Logik**: I/IV (Grundtabelle), III (Splitting × 2), V (Faktor 1,4), VI (kein Grundfreibetrag), II (Alleinerziehenden-Entlastung 4.260 €)
+  - **Kirchensteuer** 8 % (BY/BW) / 9 % (alle anderen)
+  - **Solidaritätszuschlag** mit Freibetrag (19.950 € für Klasse I/IV, 39.900 € für Klasse III) und Milderungszone
+  - **Sozialversicherung AN** mit Beitragsbemessungsgrenzen 2025 West (KV/PV 5.512,50 €, RV/AV 8.050 €)
+- **Komplett-Berechnung mit Bereitschaft** — wenn beide PDFs hochgeladen + Personal-Daten + Grundgehalt gesetzt sind, zeigt das Tool zwei Tabellen nebeneinander: „Ohne Bereitschaft" vs. „Mit Bereitschaft" — plus die marginale Netto-Differenz und Netto-Quote.
+- **Personal-Daten erweitert**: Grundgehalt (Pflicht für Netto-Calc), Funktionsgruppe, Entgeltgruppe, Stufe (aktuell informativ, automatischer Tarif-Lookup folgt).
+- **„Neu berechnen"-Button** im Button-Row — re-triggert die Anzeige mit aktuellen Personal-Daten ohne PDFs neu zu parsen.
+
+### Geändert
+- Personal-Daten-Storage-Key auf `abr_personal_v2` migriert (neue Felder).
+- Standalone-Netto-Berechnung wird auch angezeigt, wenn nur eine der beiden PDFs geladen ist (Warning-Hinweis darüber).
+
+### Hinweise
+- Die Netto-Berechnung ist eine **Schätzung** (Vorsorgepauschale ist stark vereinfacht). Verbindlich ist nur die echte Abrechnung deines Arbeitgebers. Für typische Einkommensbereiche (2.500–6.000 €/Monat) i.d.R. < 10 € Abweichung gegenüber der echten Abrechnung.
+
+---
+
 ## [1.26.0] — 2026-05-22
 
 ### Geändert

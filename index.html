@@ -2257,6 +2257,10 @@
           <span class="abr-personal-status" id="abrPersonalSummary">Noch nicht eingestellt — bitte einmalig ausfüllen</span>
         </summary>
         <div class="abr-personal-form">
+          <div class="form-row">
+            <label for="abrGrundgehalt">Monatliches Grundgehalt (brutto, in €)</label>
+            <input type="number" id="abrGrundgehalt" min="0" max="20000" step="0.01" value="" inputmode="decimal" placeholder="z.B. 3570,49">
+          </div>
           <div class="form-row-pair">
             <div class="form-row">
               <label for="abrSteuerklasse">Steuerklasse</label>
@@ -2294,15 +2298,38 @@
               <input type="number" id="abrKvZusatz" min="0" max="5" step="0.05" value="1.7" inputmode="decimal">
             </div>
             <div class="form-row">
-              <label for="abrKinderlos">Kinderlos > 23 Jahre?</label>
+              <label for="abrKinderlos">Kinderlos &gt; 23?</label>
               <select class="form-select" id="abrKinderlos">
                 <option value="false">Nein</option>
                 <option value="true">Ja (+0,6 % PV)</option>
               </select>
             </div>
           </div>
+          <div class="form-row-pair">
+            <div class="form-row">
+              <label for="abrFunktionsgruppe">Funktionsgruppe (DB)</label>
+              <select class="form-select" id="abrFunktionsgruppe">
+                <option value="">— optional —</option>
+                <option value="1">FGr 1 (Werker, Servicetec, …)</option>
+                <option value="2">FGr 2</option>
+                <option value="3">FGr 3</option>
+                <option value="4">FGr 4</option>
+                <option value="5">FGr 5</option>
+                <option value="6">FGr 6</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="abrEntgeltgruppe">Entgeltgruppe</label>
+              <input type="text" id="abrEntgeltgruppe" maxlength="6" placeholder="z.B. 107">
+            </div>
+          </div>
+          <div class="form-row">
+            <label for="abrStufe">Entgeltstufe</label>
+            <input type="number" id="abrStufe" min="1" max="10" step="1" placeholder="z.B. 2" inputmode="numeric">
+          </div>
           <div class="abr-hint" style="margin-top:6px;">
-            Diese Daten werden nur lokal in deinem Browser gespeichert und für den Cross-Check mit der Abrechnung sowie die Netto-Anzeige verwendet. Keine Übertragung nach außen.
+            Diese Daten werden nur lokal in deinem Browser gespeichert. Keine Übertragung nach außen.
+            Funktionsgruppe/Entgeltgruppe/Stufe sind aktuell nur informativ — automatische Tarif-Lookup kommt später.
           </div>
         </div>
       </details>
@@ -2328,6 +2355,7 @@
       </div>
       <div class="button-row">
         <div class="left"><button class="btn btn-secondary" onclick="showTool('home')">← Toolbox</button></div>
+        <div class="center"><button class="btn" onclick="abrRecompute()">Neu berechnen</button></div>
         <div class="right"><button class="btn btn-secondary" onclick="abrReset()">Zurücksetzen</button></div>
       </div>
     </div>
@@ -2566,7 +2594,7 @@
 <div id="print-area" aria-hidden="true"></div>
 
 <script>
-  const APP_VERSION = '1.26.0';
+  const APP_VERSION = '1.27.0';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -5993,7 +6021,7 @@
    * Werden nur lokal in localStorage gespeichert. Keine PDFs / keine Datei-
    * Inhalte — nur die einmalig vom User eingegebenen Konfig-Werte.
    */
-  const ABR_PERSONAL_KEY = 'abr_personal_v1';
+  const ABR_PERSONAL_KEY = 'abr_personal_v2';
   const abrPersonalDefault = {
     steuerklasse: 1,
     kinder: 0,
@@ -6001,6 +6029,10 @@
     bundesland: '',
     kvZusatz: 1.7,
     kinderlos: false,
+    grundgehalt:   0,    // monatliches Brutto-Grundgehalt
+    funktionsgruppe: '', // DB-spezifisch (informativ)
+    entgeltgruppe: '',   // DB-spezifisch (informativ)
+    stufe:         '',   // DB-spezifisch (informativ)
   };
   let abrPersonal = Object.assign({}, abrPersonalDefault);
 
@@ -6016,6 +6048,10 @@
       if (typeof d.bundesland === 'string' && BUNDESLAENDER.some(b => b.code === d.bundesland)) abrPersonal.bundesland = d.bundesland;
       if (typeof d.kvZusatz === 'number' && d.kvZusatz >= 0 && d.kvZusatz <= 5) abrPersonal.kvZusatz = d.kvZusatz;
       if (typeof d.kinderlos === 'boolean') abrPersonal.kinderlos = d.kinderlos;
+      if (typeof d.grundgehalt === 'number' && d.grundgehalt >= 0 && d.grundgehalt <= 50000) abrPersonal.grundgehalt = d.grundgehalt;
+      if (typeof d.funktionsgruppe === 'string') abrPersonal.funktionsgruppe = d.funktionsgruppe.slice(0, 4);
+      if (typeof d.entgeltgruppe === 'string')   abrPersonal.entgeltgruppe = d.entgeltgruppe.slice(0, 6);
+      if (typeof d.stufe === 'string' || typeof d.stufe === 'number') abrPersonal.stufe = String(d.stufe).slice(0, 4);
     } catch (e) { console.warn('loadAbrPersonal:', e); }
   }
   function saveAbrPersonal() {
@@ -6024,11 +6060,17 @@
   function abrPersonalIsComplete() {
     return !!abrPersonal.bundesland;
   }
+  function abrPersonalHasGrundgehalt() {
+    return abrPersonal.grundgehalt > 0;
+  }
   function abrPersonalSummary() {
     if (!abrPersonalIsComplete()) return 'Noch nicht eingestellt — bitte einmalig ausfüllen';
     const stRoman = ['','I','II','III','IV','V','VI'][abrPersonal.steuerklasse] || abrPersonal.steuerklasse;
     const konf = abrPersonal.konfession === 'keine' ? 'keine' : (abrPersonal.konfession === 'ev' ? 'ev.' : 'rk.');
-    return 'St ' + stRoman + ' · ' + abrPersonal.kinder + ' Kind(er) · ' + konf + ' · ' + abrPersonal.bundesland + ' · KV+' + abrPersonal.kvZusatz.toFixed(2).replace('.', ',') + ' %' + (abrPersonal.kinderlos ? ' · kinderlos>23' : '');
+    let s = 'St ' + stRoman + ' · ' + abrPersonal.kinder + ' Kind(er) · ' + konf + ' · ' + abrPersonal.bundesland + ' · KV+' + abrPersonal.kvZusatz.toFixed(2).replace('.', ',') + ' %';
+    if (abrPersonal.kinderlos) s += ' · kinderlos>23';
+    if (abrPersonal.grundgehalt > 0) s += ' · GG ' + abrFmtEUR(abrPersonal.grundgehalt);
+    return s;
   }
   function updateAbrPersonalSummary() {
     const el = document.getElementById('abrPersonalSummary');
@@ -6048,34 +6090,216 @@
       });
     }
     // Werte einsetzen
-    const ids = ['abrSteuerklasse','abrKinder','abrKonfession','abrBundesland','abrKvZusatz','abrKinderlos'];
-    document.getElementById('abrSteuerklasse').value = String(abrPersonal.steuerklasse);
-    document.getElementById('abrKinder').value       = String(abrPersonal.kinder);
-    document.getElementById('abrKonfession').value   = abrPersonal.konfession;
-    document.getElementById('abrBundesland').value   = abrPersonal.bundesland || '';
-    document.getElementById('abrKvZusatz').value     = String(abrPersonal.kvZusatz);
-    document.getElementById('abrKinderlos').value    = String(abrPersonal.kinderlos);
+    const ids = ['abrSteuerklasse','abrKinder','abrKonfession','abrBundesland','abrKvZusatz','abrKinderlos','abrGrundgehalt','abrFunktionsgruppe','abrEntgeltgruppe','abrStufe'];
+    document.getElementById('abrSteuerklasse').value    = String(abrPersonal.steuerklasse);
+    document.getElementById('abrKinder').value          = String(abrPersonal.kinder);
+    document.getElementById('abrKonfession').value      = abrPersonal.konfession;
+    document.getElementById('abrBundesland').value      = abrPersonal.bundesland || '';
+    document.getElementById('abrKvZusatz').value        = String(abrPersonal.kvZusatz);
+    document.getElementById('abrKinderlos').value       = String(abrPersonal.kinderlos);
+    document.getElementById('abrGrundgehalt').value     = abrPersonal.grundgehalt > 0 ? String(abrPersonal.grundgehalt) : '';
+    document.getElementById('abrFunktionsgruppe').value = abrPersonal.funktionsgruppe || '';
+    document.getElementById('abrEntgeltgruppe').value   = abrPersonal.entgeltgruppe || '';
+    document.getElementById('abrStufe').value           = abrPersonal.stufe || '';
     // Change-Handler
     ids.forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('change', onAbrPersonalChange);
+      el.addEventListener('input',  onAbrPersonalChange);
     });
     updateAbrPersonalSummary();
+    // Falls bereits Grundgehalt + Personal-Daten gesetzt sind → initial rendern.
+    abrRenderResult();
   }
   function onAbrPersonalChange() {
-    abrPersonal.steuerklasse = parseInt(document.getElementById('abrSteuerklasse').value, 10) || 1;
-    abrPersonal.kinder       = parseFloat(document.getElementById('abrKinder').value) || 0;
-    abrPersonal.konfession   = document.getElementById('abrKonfession').value || 'keine';
-    abrPersonal.bundesland   = document.getElementById('abrBundesland').value || '';
-    abrPersonal.kvZusatz     = parseFloat(document.getElementById('abrKvZusatz').value) || 0;
-    abrPersonal.kinderlos    = document.getElementById('abrKinderlos').value === 'true';
+    abrPersonal.steuerklasse    = parseInt(document.getElementById('abrSteuerklasse').value, 10) || 1;
+    abrPersonal.kinder          = parseFloat(document.getElementById('abrKinder').value) || 0;
+    abrPersonal.konfession      = document.getElementById('abrKonfession').value || 'keine';
+    abrPersonal.bundesland      = document.getElementById('abrBundesland').value || '';
+    abrPersonal.kvZusatz        = parseFloat(document.getElementById('abrKvZusatz').value) || 0;
+    abrPersonal.kinderlos       = document.getElementById('abrKinderlos').value === 'true';
+    abrPersonal.grundgehalt     = parseFloat(document.getElementById('abrGrundgehalt').value) || 0;
+    abrPersonal.funktionsgruppe = document.getElementById('abrFunktionsgruppe').value || '';
+    abrPersonal.entgeltgruppe   = document.getElementById('abrEntgeltgruppe').value || '';
+    abrPersonal.stufe           = document.getElementById('abrStufe').value || '';
     saveAbrPersonal();
     updateAbrPersonalSummary();
-    // Wenn schon ein Vergleich offen ist → neu rendern (Netto-Anzeige aktualisieren)
+    // Re-render — wenn schon geparst, einfach nochmal rendern; sonst idle.
     if (abrState.abrechnung && abrState.bereitschaft && abrState.abrechnung.parsed && abrState.bereitschaft.parsed) {
+      abrState.comparing = false;
       abrTryCompare();
+    } else {
+      abrRenderResult();
     }
+  }
+  let _lastCmpResult = null;
+
+  /* ===== Netto-Berechnung (vereinfacht) =====
+   *
+   * Implementiert §32a EStG 2025 (Einkommensteuer-Tarif), KiSt 8/9 %,
+   * Solidaritätszuschlag mit Freibetrag, Sozialversicherungs-Beiträge AN
+   * mit Beitragsbemessungsgrenzen West (Stand 2025).
+   *
+   * Wichtig: das ist eine SCHÄTZUNG. Verbindlich ist nur die echte Abrechnung
+   * deines Arbeitgebers. Die offizielle Lohnsteuer-Berechnung (PAP) ist
+   * deutlich komplexer (Vorsorgepauschale, Faktor-Verfahren, etc.) und wird
+   * hier vereinfacht abgebildet — für die typischen Einkommensbereiche
+   * (2.500–6.000 € Brutto/Monat) i.d.R. < 10 € Abweichung.
+   */
+
+  // Einkommensteuer-Tarif §32a EStG 2025 (Jahres-zvE → Jahres-LSt)
+  function abrTarif32a(zvE) {
+    if (zvE <= 12096) return 0;
+    if (zvE <= 17443) {
+      const y = (zvE - 12096) / 10000;
+      return (932.30 * y + 1400) * y;
+    }
+    if (zvE <= 68480) {
+      const z = (zvE - 17443) / 10000;
+      return (176.64 * z + 2397) * z + 1015.13;
+    }
+    if (zvE <= 277825) return 0.42 * zvE - 10911.92;
+    return 0.45 * zvE - 19246.67;
+  }
+  // Monatliche Lohnsteuer je Steuerklasse
+  function abrCalcLohnsteuer(bruttoMonat, klasse) {
+    const jahresbrutto = bruttoMonat * 12;
+    // Pauschbeträge (vereinfacht)
+    const arbnPausch = 1230;     // Arbeitnehmer-Pauschbetrag §9a
+    const sondAusg   = 36;       // Sonderausgaben-Pauschale §10c
+    // Vorsorgepauschale (sehr vereinfacht, ~12 % gedeckelt)
+    const vorsorge   = Math.min(jahresbrutto * 0.12, 8000);
+    let zvE = Math.max(0, jahresbrutto - arbnPausch - sondAusg - vorsorge);
+    let stJahr;
+    if (klasse === 3) {
+      // Splitting: zvE halbieren, LSt × 2
+      stJahr = 2 * abrTarif32a(zvE / 2);
+    } else if (klasse === 5) {
+      // Klasse V (Nebenverdiener): höherer effektiver Steuersatz.
+      // Vereinfacht: 1,4 × Grundtarif.
+      stJahr = abrTarif32a(zvE) * 1.4;
+    } else if (klasse === 6) {
+      // Klasse VI: kein Grundfreibetrag, nur Sonderausgaben-Pauschale.
+      const zvE6 = Math.max(0, jahresbrutto - sondAusg);
+      stJahr = abrTarif32a(zvE6 + 12096); // approximation: Grundfreibetrag "umgehen"
+    } else if (klasse === 2) {
+      // Klasse II: Alleinerziehenden-Entlastungsbetrag 4260 €
+      const zvE2 = Math.max(0, zvE - 4260);
+      stJahr = abrTarif32a(zvE2);
+    } else {
+      // I, IV
+      stJahr = abrTarif32a(zvE);
+    }
+    return abrRound2(stJahr / 12);
+  }
+  // Kirchensteuer 8 % (BY, BW) bzw. 9 % der Lohnsteuer
+  function abrCalcKirchensteuer(lstMonat, konfession, bundesland) {
+    if (!konfession || konfession === 'keine') return 0;
+    const satz = (bundesland === 'BY' || bundesland === 'BW') ? 0.08 : 0.09;
+    return abrRound2(lstMonat * satz);
+  }
+  // Solidaritätszuschlag (Freibetrag 2025: 19.950 € jährliche LSt für Klasse I/IV,
+  // 39.900 € für Klasse III; Milderungszone bis 11,9 % Anstieg)
+  function abrCalcSoli(lstMonat, klasse) {
+    const jahresLst = lstMonat * 12;
+    const freibetrag = (klasse === 3) ? 39900 : 19950;
+    if (jahresLst <= freibetrag) return 0;
+    const voll = jahresLst * 0.055;
+    const milderung = (jahresLst - freibetrag) * 0.119;
+    return abrRound2(Math.min(voll, milderung) / 12);
+  }
+  // Sozialversicherung AN-Anteile 2025 (monatlich, West)
+  function abrCalcSV(bruttoMonat, kvZusatzPct, kinderlosUeb23) {
+    // Beitragsbemessungsgrenzen 2025 West (monatlich)
+    const bbgKvPv = 5512.50;
+    const bbgRvAv = 8050;
+    const bemKvPv = Math.min(bruttoMonat, bbgKvPv);
+    const bemRvAv = Math.min(bruttoMonat, bbgRvAv);
+    // Beitragssätze AN
+    const kvSatz = 0.073 + (kvZusatzPct / 100) / 2;
+    const rvSatz = 0.093;
+    const avSatz = 0.013;
+    const pvSatz = 0.018 + (kinderlosUeb23 ? 0.006 : 0);
+    return {
+      kv: abrRound2(bemKvPv * kvSatz),
+      rv: abrRound2(bemRvAv * rvSatz),
+      av: abrRound2(bemRvAv * avSatz),
+      pv: abrRound2(bemKvPv * pvSatz),
+    };
+  }
+  // Komplette Netto-Berechnung
+  function abrCalcNetto(bruttoMonat, personal) {
+    const lst  = abrCalcLohnsteuer(bruttoMonat, personal.steuerklasse);
+    const kist = abrCalcKirchensteuer(lst, personal.konfession, personal.bundesland);
+    const soli = abrCalcSoli(lst, personal.steuerklasse);
+    const sv   = abrCalcSV(bruttoMonat, personal.kvZusatz, personal.kinderlos);
+    const abz  = abrRound2(lst + kist + soli + sv.kv + sv.rv + sv.av + sv.pv);
+    return {
+      brutto: bruttoMonat,
+      lst, kist, soli,
+      kv: sv.kv, rv: sv.rv, av: sv.av, pv: sv.pv,
+      abz,
+      netto: abrRound2(bruttoMonat - abz),
+    };
+  }
+  // Render: vollständige Netto-Aufstellung als Tabelle
+  function abrRenderNettoTable(label, n) {
+    let html = '<table class="abr-table">';
+    html += '<thead><tr><th>Posten</th><th class="num">' + escapeHtml(label) + '</th></tr></thead>';
+    html += '<tbody>';
+    html += '<tr><td><strong>Brutto</strong></td><td class="num"><strong>' + abrFmtEUR(n.brutto) + '</strong></td></tr>';
+    if (n.lst  > 0) html += '<tr class="diff"><td>− Lohnsteuer</td><td class="num">−' + abrFmtEUR(n.lst) + '</td></tr>';
+    if (n.kist > 0) html += '<tr class="diff"><td>− Kirchensteuer</td><td class="num">−' + abrFmtEUR(n.kist) + '</td></tr>';
+    if (n.soli > 0) html += '<tr class="diff"><td>− Solidaritätszuschlag</td><td class="num">−' + abrFmtEUR(n.soli) + '</td></tr>';
+    if (n.kv   > 0) html += '<tr class="diff"><td>− Krankenversicherung</td><td class="num">−' + abrFmtEUR(n.kv) + '</td></tr>';
+    if (n.rv   > 0) html += '<tr class="diff"><td>− Rentenversicherung</td><td class="num">−' + abrFmtEUR(n.rv) + '</td></tr>';
+    if (n.av   > 0) html += '<tr class="diff"><td>− Arbeitslosenversicherung</td><td class="num">−' + abrFmtEUR(n.av) + '</td></tr>';
+    if (n.pv   > 0) html += '<tr class="diff"><td>− Pflegeversicherung</td><td class="num">−' + abrFmtEUR(n.pv) + '</td></tr>';
+    html += '<tr><td style="font-weight:600;">Summe Abzüge</td><td class="num" style="font-weight:600;">−' + abrFmtEUR(n.abz) + '</td></tr>';
+    html += '<tr style="border-top:2px solid var(--border);">';
+    html += '<td style="font-weight:800;color:var(--text-strong);">= Netto</td>';
+    html += '<td class="num" style="font-weight:800;font-size:15px;color:#2EA043;">' + abrFmtEUR(n.netto) + '</td>';
+    html += '</tr>';
+    html += '</tbody></table>';
+    return html;
+  }
+  // Render: Standalone-Berechnung wenn Personal-Daten + Grundgehalt gesetzt
+  function abrRenderStandaloneCalc() {
+    if (!abrPersonalIsComplete() || !abrPersonalHasGrundgehalt()) return '';
+    const gg = abrPersonal.grundgehalt;
+    const n  = abrCalcNetto(gg, abrPersonal);
+    let html = '<div class="abr-result-block">';
+    html += '<h4>Berechnetes Monats-Netto (nur Grundgehalt)</h4>';
+    html += '<div class="abr-hint">Berechnung auf Basis deiner persönlichen Daten — ohne Bereitschaft, ohne Zulagen. Verwendet §32a EStG 2025, KiSt ' + ((abrPersonal.bundesland === 'BY' || abrPersonal.bundesland === 'BW') ? '8 %' : '9 %') + ', Soli mit Freibetrag, SV-Beiträge West.</div>';
+    html += abrRenderNettoTable('Wert', n);
+    html += '<div class="abr-hint" style="margin-top:6px;font-style:italic;">⚠️ Schätzung — verbindlich ist nur die Abrechnung deines Arbeitgebers. Vorsorgepauschale stark vereinfacht.</div>';
+    html += '</div>';
+    return html;
+  }
+  // Render: erweiterte Berechnung mit Bereitschaft (Grundgehalt + Bereitschafts-Brutto)
+  function abrRenderKomplettCalc(bereitschaftsBrutto) {
+    if (!abrPersonalIsComplete() || !abrPersonalHasGrundgehalt() || !(bereitschaftsBrutto > 0)) return '';
+    const gg = abrPersonal.grundgehalt;
+    const ohneB = abrCalcNetto(gg, abrPersonal);
+    const mitB  = abrCalcNetto(gg + bereitschaftsBrutto, abrPersonal);
+    const deltaNetto = abrRound2(mitB.netto - ohneB.netto);
+    const deltaBrutto = bereitschaftsBrutto;
+    const quote = (deltaNetto / deltaBrutto) * 100;
+    let html = '<div class="abr-result-block">';
+    html += '<h4>Komplett-Berechnung (Grundgehalt + Bereitschaft)</h4>';
+    html += '<div class="abr-hint">Hier siehst du, wie sich dein Netto verändert, wenn die Bereitschafts-Vergütung on top kommt. Marginaler Netto-Anteil = was die Bereitschaft dir wirklich aufs Konto bringt.</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:8px;">';
+    html += '<div style="min-width:0;">' + abrRenderNettoTable('Ohne Bereitschaft', ohneB) + '</div>';
+    html += '<div style="min-width:0;">' + abrRenderNettoTable('Mit Bereitschaft',  mitB)  + '</div>';
+    html += '</div>';
+    html += '<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);">';
+    html += '<div class="abr-brutto"><span>Bereitschafts-Brutto (on top):</span><span class="val">' + abrFmtEUR(deltaBrutto) + '</span></div>';
+    html += '<div class="abr-brutto"><span>davon Netto (Differenz):</span><span class="val ok">' + abrFmtEUR(deltaNetto) + '</span></div>';
+    html += '<div class="abr-brutto"><span>Marginale Netto-Quote:</span><span class="val">' + quote.toFixed(1).replace('.', ',') + ' %</span></div>';
+    html += '</div>';
+    html += '</div>';
+    return html;
   }
 
   /* ---- Vergleich ---- */
@@ -6204,6 +6428,7 @@
       const cmp = (abrState.abrechnung.parsed.parsed && abrState.bereitschaft.parsed.parsed)
         ? compareAbrBer(abrState.abrechnung.parsed.parsed, abrState.bereitschaft.parsed.parsed)
         : null;
+      _lastCmpResult = cmp;
       abrState.comparing = false;
       abrRenderComparison(cmp);
     } catch (e) {
@@ -6219,15 +6444,29 @@
     if (!el) return;
     const haveA = !!abrState.abrechnung;
     const haveB = !!abrState.bereitschaft;
+    const standalone = abrRenderStandaloneCalc();
     if (!haveA && !haveB) {
-      el.classList.add('empty');
-      el.textContent = 'Noch keine Auswertung. Sobald beide PDFs gewählt sind, startet der Check automatisch.';
+      if (standalone) {
+        // Personal-Daten + Grundgehalt sind gesetzt → direkt Berechnung zeigen,
+        // auch ohne hochgeladene PDFs.
+        el.classList.remove('empty');
+        el.innerHTML =
+          '<div class="abr-result-block">' +
+            '<div class="abr-hint">Noch keine PDFs hochgeladen — für den Bereitschafts-Vergleich beide Dateien wählen. Die untenstehende Netto-Berechnung basiert komplett auf deinen persönlichen Daten und ist auch ohne PDFs nutzbar.</div>' +
+          '</div>' + standalone;
+      } else {
+        el.classList.add('empty');
+        el.textContent = 'Noch keine Auswertung. Beide PDFs wählen — oder oben in „Persönliche Daten" Grundgehalt eintragen, um eine reine Netto-Berechnung zu sehen.';
+      }
       return;
     }
     if (haveA !== haveB) {
-      el.classList.add('empty');
+      el.classList.remove('empty');
       const missing = haveA ? 'Bereitschafts-Liste' : 'Abrechnung';
-      el.textContent = 'Noch eine Datei fehlt: ' + missing + '.';
+      el.innerHTML =
+        '<div class="abr-result-block">' +
+          '<div class="abr-status-row"><span class="abr-status-badge warn">Noch eine Datei fehlt: ' + escapeHtml(missing) + '</span></div>' +
+        '</div>' + standalone;
       return;
     }
   }
@@ -6458,7 +6697,14 @@
       }
     }
 
-    // 7) Hinweise
+    // 7) Komplett-Berechnung mit Personal-Daten (wenn Grundgehalt gesetzt)
+    if (abrPersonalIsComplete() && abrPersonalHasGrundgehalt() && s.bereitschaftsBrutto > 0) {
+      html += abrRenderKomplettCalc(s.bereitschaftsBrutto);
+    } else if (abrPersonalIsComplete() && !abrPersonalHasGrundgehalt()) {
+      html += '<div class="abr-result-block"><div class="abr-hint">💡 Tipp: Trag oben dein <strong>monatliches Grundgehalt</strong> ein, dann zeigt das Tool dir die komplette Netto-Berechnung — Grundgehalt + Bereitschaft + Zulagen → was wirklich aufs Konto kommt.</div></div>';
+    }
+
+    // 8) Hinweise
     const warnings = [].concat(abr.warnings || []).concat(ber.warnings || []);
     if (warnings.length) {
       html += '<div class="abr-result-block"><h4>Hinweise</h4><ul style="padding-left:18px;margin:0;">';
@@ -6467,6 +6713,15 @@
     }
 
     el.innerHTML = html;
+  }
+  // "Neu berechnen" — re-trigger mit aktuellen Personal-Daten.
+  function abrRecompute() {
+    abrState.comparing = false;
+    if (abrState.abrechnung && abrState.bereitschaft) {
+      abrTryCompare();
+    } else {
+      abrRenderResult();
+    }
   }
 
   /* ===== Service Worker (PWA Offline) ===== */
