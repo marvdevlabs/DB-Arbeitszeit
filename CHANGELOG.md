@@ -7,6 +7,18 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.28.0] — 2026-05-22
+
+### Geändert
+- **Zweistufiger Wizard** für den Abrechnungs-Check: nach dem Upload zeigt das Tool zuerst **nur den LRE-Vergleich** (Layout / Monat / Vergleichstabelle) — übersichtlicher und schneller erfasst. Erst per Klick auf **„Weiter zur Geld-Prüfung →"** werden die Brutto-/Netto-Berechnungen aufgedeckt.
+- **„← Nur LRE-Check anzeigen"-Button** in Schritt 2, um wieder zur kompakten Ansicht zu wechseln.
+- Bei jedem neuen PDF-Upload startet das Tool wieder bei Schritt 1.
+
+### Geplant
+- DB-Tarif-Tabellen (Funktionsgruppe + Entgeltgruppe + Stufe → Grundgehalt) für automatisches Lookup. Aktuell noch manuelle Grundgehalt-Eingabe — die Tarif-PDF kann in der Sandbox nicht gelesen werden, dafür braucht's die Tabellen als Text vom User.
+
+---
+
 ## [1.27.0] — 2026-05-22
 
 ### Hinzugefügt

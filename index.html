@@ -2594,7 +2594,7 @@
 <div id="print-area" aria-hidden="true"></div>
 
 <script>
-  const APP_VERSION = '1.27.0';
+  const APP_VERSION = '1.28.0';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -5416,6 +5416,7 @@
     abrechnung:    null,   // { name, sizeKB, raw, parsed:{layoutOk, ext, parsed} }
     bereitschaft:  null,
     comparing:     false,
+    showMoney:     false,  // false = nur LRE-Check, true = inkl. Geld-Pruefung
   };
 
   // Default-Tarif-Saetze (2025/2026). Werden, sobald moeglich, durch die
@@ -6386,6 +6387,8 @@
       console.warn('abrHandleFile read error', e);
     }
     if (abrState.abrechnung && abrState.bereitschaft) {
+      // Neue PDFs → Wizard zurueck auf Schritt 1 (LRE-Check).
+      abrState.showMoney = false;
       abrTryCompare();
     } else {
       abrRenderIdle();
@@ -6396,6 +6399,7 @@
     abrState.abrechnung = null;
     abrState.bereitschaft = null;
     abrState.comparing = false;
+    abrState.showMoney = false;
     ['abrechnung', 'bereitschaft'].forEach(k => {
       const slot = abrSlotEl(k);
       const stat = abrStatusEl(k);
@@ -6574,15 +6578,34 @@
     }
     html += '</tbody></table>';
     if (cmp.diffs.length === 0) {
-      html += '<div class="abr-status-row" style="margin-top:8px;"><span class="abr-status-badge ok">Alle Werte stimmen ueberein</span></div>';
+      html += '<div class="abr-status-row" style="margin-top:8px;"><span class="abr-status-badge ok">✓ Alle LRE-Werte stimmen überein</span></div>';
     } else {
-      html += '<div class="abr-status-row" style="margin-top:8px;"><span class="abr-status-badge warn">' + cmp.diffs.length + ' Abweichung(en)</span></div>';
+      html += '<div class="abr-status-row" style="margin-top:8px;"><span class="abr-status-badge warn">⚠ ' + cmp.diffs.length + ' Abweichung(en)</span></div>';
     }
     if (cmp.refStdSource === 'zulageberechtigt' && ber.totalStd > 0) {
       html += '<div class="abr-hint">Vergleich nutzt die <strong>zulageberechtigte Rufbereitschaftszeit</strong> ('
            + abrFmtNum(ber.zulageBerStd, 2) + ' = ' + refStd + ' h gerundet) — das ist die Zeit, die der DB tatsächlich verguetet. '
            + 'Gesamt-Rufbereitschaft laut Liste: ' + abrFmtNum(ber.totalStd, 2) + ' Std, davon Arbeitseinsaetze ' + abrFmtNum(ber.einsaetzeStd, 2) + ' Std.</div>';
     }
+    html += '</div>';
+
+    // ====== WIZARD-CUT ======
+    // Schritt 1 (LRE-Check) endet hier. Geld-Pruefung erst auf User-Wunsch.
+    if (!abrState.showMoney) {
+      html += '<div class="abr-result-block" style="text-align:center;background:var(--bg-card-alt);">';
+      html += '<div style="margin-bottom:10px;font-size:13px;color:var(--text-secondary);">Möchtest du auch prüfen, ob die <strong>überwiesenen Beträge</strong> stimmen?</div>';
+      html += '<button class="btn" onclick="abrShowMoney()">Weiter zur Geld-Prüfung →</button>';
+      html += '</div>';
+      el.innerHTML = html;
+      return;
+    }
+
+    // ====== SCHRITT 2: GELD-PRUEFUNG ======
+    html += '<div class="abr-result-block" style="background:var(--info-bg);">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">';
+    html += '<div><strong>Schritt 2: Geld-Prüfung</strong><br><span style="font-size:12px;color:var(--text-secondary);">Stimmen die ausgezahlten Beträge?</span></div>';
+    html += '<button class="btn btn-secondary" style="font-size:12px;padding:6px 12px;" onclick="abrHideMoney()">← Nur LRE-Check anzeigen</button>';
+    html += '</div>';
     html += '</div>';
 
     // 4) Bereitschafts-Brutto (NUR Bereitschaft + Zulagen, on top vom Grundgehalt)
@@ -6721,6 +6744,22 @@
       abrTryCompare();
     } else {
       abrRenderResult();
+    }
+  }
+  // Schritt 2 (Geld-Pruefung) freischalten.
+  function abrShowMoney() {
+    abrState.showMoney = true;
+    if (abrState.abrechnung && abrState.bereitschaft && abrState.abrechnung.parsed && abrState.bereitschaft.parsed) {
+      abrState.comparing = false;
+      abrTryCompare();
+    }
+  }
+  // Wieder zurueck auf reine LRE-Ansicht.
+  function abrHideMoney() {
+    abrState.showMoney = false;
+    if (abrState.abrechnung && abrState.bereitschaft && abrState.abrechnung.parsed && abrState.bereitschaft.parsed) {
+      abrState.comparing = false;
+      abrTryCompare();
     }
   }
 
