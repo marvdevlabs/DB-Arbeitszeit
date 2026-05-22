@@ -2594,7 +2594,7 @@
 <div id="print-area" aria-hidden="true"></div>
 
 <script>
-  const APP_VERSION = '1.31.0';
+  const APP_VERSION = '1.31.1';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -5936,6 +5936,16 @@
       monthObj.sum = sum;
       result.months.push(monthObj);
     }
+    // Eine Abrechnungsbescheinigung enthaelt EINEN Zahlungslauf — die Lohnart 977
+    // ("Überweisung") steht typischerweise im LETZTEN Block (= Zahlungsmonat).
+    // Wir speichern die globale Ueberweisung auf result-Ebene, damit der
+    // Geld-Pruefungs-View sie unabhaengig vom gematchten Lohn-Monat findet.
+    result.ueberweisung = 0;
+    for (const month of result.months) {
+      for (const block of month.blocks) {
+        if (block.ueberweisung > result.ueberweisung) result.ueberweisung = block.ueberweisung;
+      }
+    }
     if (!result.months.length) result.warnings.push('Kein Abrechnungs-Block erkannt.');
     return result;
   }
@@ -6343,6 +6353,7 @@
       estimatedBrutto: null,
       refStdSource: ber.zulageBerStd > 0 ? 'zulageberechtigt' : 'gesamt',
       refStdRounded,
+      ueberweisung: abr.ueberweisung || 0,   // global aus der Abrechnung
     };
     if (!monthEntry) return r;
     const s = monthEntry.sum;
@@ -6659,18 +6670,19 @@
     }
 
     // 5) FINAL: Auszahlungsbetrag — bevorzugt aus Lohnart 977, sonst Schätzung
-    if (s.ueberweisung > 0) {
+    const ueberweisungGlobal = cmp.ueberweisung || s.ueberweisung || 0;
+    if (ueberweisungGlobal > 0) {
       html += '<div class="abr-result-block" style="border:1.5px solid #2EA043;background:rgba(46,160,67,0.06);">';
       html += '<h4 style="color:#2EA043;">💰 Dein Auszahlungsbetrag</h4>';
-      html += '<div class="abr-hint">Direkt aus deiner Abrechnung (Lohnart 977 „Überweisung") — das ist der Betrag, der wirklich aufs Konto kommt. Enthält ggf. übertragene Nachzahlungen aus Vormonaten.</div>';
+      html += '<div class="abr-hint">Direkt aus deiner Abrechnung (Lohnart 977 „Überweisung") — das ist der Betrag, der für diesen Zahlungslauf aufs Konto kommt. Enthält ggf. die Bereitschafts-Nachzahlung für den hochgeladenen Monat sowie den regulären Folgemonat.</div>';
       html += '<div class="abr-brutto" style="margin-top:12px;align-items:center;">';
       html += '<span style="font-weight:700;font-size:14px;">Tatsächlich überwiesen:</span>';
-      html += '<span class="val ok" style="font-size:26px;">' + abrFmtEUR(s.ueberweisung) + '</span>';
+      html += '<span class="val ok" style="font-size:26px;">' + abrFmtEUR(ueberweisungGlobal) + '</span>';
       html += '</div>';
       if (abrPersonalIsComplete() && abrPersonalHasGrundgehalt()) {
         const gg    = abrPersonal.grundgehalt;
         const ohneB = abrCalcNetto(gg, abrPersonal);
-        const delta = abrRound2(s.ueberweisung - ohneB.netto);
+        const delta = abrRound2(ueberweisungGlobal - ohneB.netto);
         html += '<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);">';
         html += '<div class="abr-hint">Zum Einordnen — geschätztes Monats-Netto OHNE Bereitschaft (basierend auf deinem Grundgehalt + Steuer-/SV-Konfig):</div>';
         html += '<div class="abr-brutto"><span>Netto ohne Bereitschaft (geschätzt):</span><span class="val">' + abrFmtEUR(ohneB.netto) + '</span></div>';

@@ -7,6 +7,15 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.31.1] — 2026-05-22
+
+### Behoben
+- **Auszahlungsbetrag wurde noch nicht angezeigt** — die Lohnart 977 („Überweisung") steht typischerweise im LETZTEN Block der Abrechnung (= Zahlungsmonat), nicht im Lohnmonat-Block der gematchten Bereitschaftsliste. Beispiel: bei Bereitschaft im Januar (Block `01.26/2 = Nachzahlung`) steht die Überweisung im Februar-Block (`02.26/1`), weil der Lohn erst dort ausgezahlt wird. Mein Tool hat nur im Januar-Block gesucht und nichts gefunden → fiel auf die Schätzung zurück.
+- **Fix**: Lohnart 977 wird jetzt **global pro Abrechnung** gespeichert (`result.ueberweisung`), nicht pro Monat. Der Wert wird immer angezeigt, sobald die Abrechnung ihn enthält — unabhängig davon, welcher Monat-Block zur Bereitschaftsliste matched.
+- **Hinweis-Text** dazu ergänzt: „Direkt aus deiner Abrechnung — enthält ggf. die Bereitschafts-Nachzahlung sowie den regulären Folgemonat."
+
+---
+
 ## [1.31.0] — 2026-05-22
 
 ### Geändert
