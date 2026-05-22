@@ -321,6 +321,204 @@
   .step.hidden { display: none; }
   .step h2 { font-size: 16px; margin-bottom: 12px; color: var(--text-strong); }
 
+  /* ===== Toolbox / Tool-Switcher ===== */
+  .tool { display: block; }
+  .tool.hidden { display: none !important; }
+
+  .tool-home { padding: 22px 20px 18px; }
+  .tool-home h2 {
+    font-size: 18px; margin-bottom: 6px; color: var(--text-strong);
+    text-align: center;
+  }
+  .tool-home .home-sub {
+    text-align: center; color: var(--text-secondary);
+    font-size: 13px; margin-bottom: 18px;
+  }
+  .tool-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  @media (min-width: 560px) {
+    .tool-grid { grid-template-columns: 1fr 1fr; }
+  }
+  .tool-card {
+    background: var(--bg-card);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 16px 16px;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    color: var(--text-main);
+    display: flex; flex-direction: column; gap: 10px;
+    transition: transform 0.15s, box-shadow 0.2s, border-color 0.15s, background 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    width: 100%;
+  }
+  .tool-card:hover {
+    border-color: var(--db-red);
+    background: var(--info-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(236,0,22,0.10);
+  }
+  .tool-card:active { transform: translateY(0); }
+  .tool-card-head {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .tool-card-icon {
+    flex: 0 0 38px; height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(180deg, var(--db-red) 0%, var(--db-red-dark) 100%);
+    color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(236,0,22,0.25);
+  }
+  .tool-card-icon svg { width: 20px; height: 20px; }
+  .tool-card-title {
+    font-size: 15px; font-weight: 700; color: var(--text-strong);
+    line-height: 1.25;
+  }
+  .tool-card-desc {
+    font-size: 12.5px; line-height: 1.55;
+    color: var(--text-secondary);
+  }
+  .tool-card-tag {
+    display: inline-block;
+    align-self: flex-start;
+    margin-top: 2px;
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px;
+    text-transform: uppercase;
+    background: var(--bg-button-soft);
+    color: var(--text-secondary);
+  }
+  .tool-card-tag.beta {
+    background: rgba(255, 184, 77, 0.20);
+    color: #B7791F;
+  }
+  body[data-theme="dark"] .tool-card-tag.beta { color: #FFD180; }
+
+  /* "← Toolbox" Header-Button */
+  .header-home {
+    background: rgba(0,0,0,0.22); color: #fff; border: none;
+    height: 32px; padding: 0 12px 0 10px;
+    border-radius: 100px;
+    font-size: 12px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.15s, transform 0.08s;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .header-home:hover { background: rgba(0,0,0,0.35); }
+  .header-home:active { transform: scale(0.96); }
+  .header-home svg { width: 14px; height: 14px; }
+  .header-home.hidden { display: none; }
+
+  /* ===== Abrechnungs-Tool ===== */
+  .privacy-banner {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: rgba(46, 160, 67, 0.10);
+    border: 1px solid rgba(46, 160, 67, 0.30);
+    border-radius: 10px;
+    padding: 11px 14px;
+    margin: 16px 20px 0;
+    font-size: 12.5px; line-height: 1.5;
+    color: var(--text-secondary);
+  }
+  body[data-theme="dark"] .privacy-banner {
+    background: rgba(46, 160, 67, 0.14);
+    border-color: rgba(46, 160, 67, 0.40);
+  }
+  .privacy-banner svg {
+    flex: 0 0 18px; width: 18px; height: 18px;
+    color: #2EA043; margin-top: 1px;
+  }
+  .privacy-banner strong { color: var(--text-strong); }
+
+  .upload-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 6px;
+  }
+  @media (min-width: 560px) {
+    .upload-grid { grid-template-columns: 1fr 1fr; }
+  }
+  .upload-slot {
+    border: 2px dashed var(--border-input);
+    border-radius: 12px;
+    background: var(--bg-card);
+    padding: 16px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+    align-items: stretch; text-align: center;
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+  }
+  .upload-slot.has-file {
+    border-style: solid;
+    border-color: #2EA043;
+    background: rgba(46, 160, 67, 0.06);
+  }
+  .upload-slot.error {
+    border-color: var(--db-red);
+    background: rgba(236, 0, 22, 0.06);
+  }
+  .upload-slot-label {
+    font-size: 13px; font-weight: 700; color: var(--text-strong);
+  }
+  .upload-slot-hint {
+    font-size: 11.5px; color: var(--text-muted); line-height: 1.45;
+  }
+  .upload-slot-status {
+    font-size: 12px; color: var(--text-secondary);
+    word-break: break-word;
+    min-height: 16px;
+  }
+  .upload-slot.has-file .upload-slot-status {
+    color: #2EA043; font-weight: 600;
+  }
+  .upload-slot.error .upload-slot-status {
+    color: var(--db-red); font-weight: 600;
+  }
+  .upload-slot input[type="file"] {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer;
+    width: 100%; height: 100%;
+  }
+  .upload-slot-icon {
+    width: 28px; height: 28px;
+    margin: 0 auto;
+    color: var(--text-muted);
+  }
+  .upload-slot.has-file .upload-slot-icon { color: #2EA043; }
+  .upload-slot.error .upload-slot-icon { color: var(--db-red); }
+
+  .abr-result {
+    margin-top: 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-card-alt);
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    min-height: 64px;
+  }
+  .abr-result.empty {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); font-style: italic;
+    text-align: center;
+  }
+  .abr-result h4 {
+    font-size: 14px; margin-bottom: 6px; color: var(--text-strong);
+  }
+  .abr-result-block + .abr-result-block {
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px dashed var(--border);
+  }
+
   .form-row { margin-bottom: 12px; }
   label { display: block; font-weight: 600; margin-bottom: 4px; color: var(--text-strong); font-size: 13px; }
   input[type="number"], input[type="time"], input[type="text"], input[type="date"] {
@@ -1733,6 +1931,10 @@
       <div class="sub" id="header-sub"></div>
     </div>
     <div class="header-right">
+      <button class="header-home hidden" id="headerHome" onclick="showTool('home')" title="Zur Toolbox" aria-label="Zur Toolbox">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12 12 4l9 8"/><path d="M5 10v10h14V10"/></svg>
+        <span>Tools</span>
+      </button>
       <button class="header-bundesland hidden" id="headerBundesland" onclick="showStep(1)" title="Bundesland ändern" aria-label="Bundesland ändern">
         <span id="headerBundeslandLabel">—</span>
       </button>
@@ -1756,6 +1958,37 @@
     </div>
   </header>
 
+  <!-- ====== Home / Toolbox-Auswahl ====== -->
+  <section class="tool hidden" id="tool-home">
+    <div class="tool-home">
+      <h2>Was möchtest du machen?</h2>
+      <div class="home-sub">Wähle ein Werkzeug aus.</div>
+      <div class="tool-grid">
+        <button type="button" class="tool-card" onclick="showTool('tageserfassung')">
+          <div class="tool-card-head">
+            <div class="tool-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            </div>
+            <div class="tool-card-title">Tageserfassung<br><small style="font-weight:400;font-size:11.5px;color:var(--text-muted);">Arbeitszeit &amp; AE-Werte</small></div>
+          </div>
+          <div class="tool-card-desc">Aufträge mit Splits, AE-Werten, Reise- &amp; Rückzeit erfassen. Plus-Stunden, Pausen und Protokoll automatisch.</div>
+        </button>
+        <button type="button" class="tool-card" onclick="showTool('abrechnung')">
+          <div class="tool-card-head">
+            <div class="tool-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M9 14h6M9 17h4"/></svg>
+            </div>
+            <div class="tool-card-title">Abrechnung prüfen<br><small style="font-weight:400;font-size:11.5px;color:var(--text-muted);">Bereitschaft &amp; LRE</small></div>
+          </div>
+          <div class="tool-card-desc">Abrechnung + Bereitschafts-Liste hochladen, automatisch vergleichen und Brutto schätzen. Alles offline.</div>
+          <span class="tool-card-tag beta">Beta</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== Tool 1: Tageserfassung (bestehend) ====== -->
+  <section class="tool hidden" id="tool-tageserfassung">
   <!-- Step 1: Bundesland -->
   <div class="step" id="step1">
     <h2>In welchem Bundesland arbeitest du?</h2>
@@ -1857,6 +2090,50 @@
       <div class="right"><button class="btn btn-secondary" onclick="openResetModal()">Neuer Tag</button></div>
     </div>
   </div>
+  </section><!-- /tool-tageserfassung -->
+
+  <!-- ====== Tool 2: Abrechnungs-Check ====== -->
+  <section class="tool hidden" id="tool-abrechnung">
+    <div class="privacy-banner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg>
+      <div>
+        <strong>Alles bleibt auf deinem Gerät.</strong> Die PDFs werden ausschließlich lokal im Browser
+        verarbeitet — kein Upload, kein Server, keine Speicherung. Beim Verlassen oder Neu-Laden
+        sind sämtliche Daten weg.
+      </div>
+    </div>
+    <div class="step">
+      <h2>Abrechnung &amp; Bereitschafts-Liste vergleichen</h2>
+      <div class="info-box">
+        Lade <strong>beide</strong> PDFs aus dem gleichen Monat hoch. Das Tool prüft Layout,
+        Monatsabgleich und vergleicht die ausgezahlten LRE-Werte mit der Liste. Mehrere Monate
+        können nacheinander geprüft werden.
+      </div>
+      <div class="upload-grid">
+        <label class="upload-slot" id="abrSlotAbrechnung">
+          <svg class="upload-slot-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M9 14h6M9 17h4"/></svg>
+          <div class="upload-slot-label">1. Abrechnung (PDF)</div>
+          <div class="upload-slot-hint">DB-Abrechnungsbescheinigung des Monats</div>
+          <div class="upload-slot-status" id="abrStatusAbrechnung">Tippen oder Datei hierhin ziehen</div>
+          <input type="file" id="abrFileAbrechnung" accept="application/pdf,.pdf">
+        </label>
+        <label class="upload-slot" id="abrSlotBereitschaft">
+          <svg class="upload-slot-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M16 3v4M8 3v4M4 11h16"/></svg>
+          <div class="upload-slot-label">2. Bereitschafts-Liste (PDF)</div>
+          <div class="upload-slot-hint">Liste vom <em>gleichen</em> Monat</div>
+          <div class="upload-slot-status" id="abrStatusBereitschaft">Tippen oder Datei hierhin ziehen</div>
+          <input type="file" id="abrFileBereitschaft" accept="application/pdf,.pdf">
+        </label>
+      </div>
+      <div class="abr-result empty" id="abrResult">
+        Noch keine Auswertung. Sobald beide PDFs gewählt sind, startet der Check automatisch.
+      </div>
+      <div class="button-row">
+        <div class="left"><button class="btn btn-secondary" onclick="showTool('home')">← Toolbox</button></div>
+        <div class="right"><button class="btn btn-secondary" onclick="abrReset()">Zurücksetzen</button></div>
+      </div>
+    </div>
+  </section>
 </div>
 
 <div class="modal-overlay hidden" id="modal10h">
@@ -2091,7 +2368,7 @@
 <div id="print-area" aria-hidden="true"></div>
 
 <script>
-  const APP_VERSION = '1.23.1';
+  const APP_VERSION = '1.24.0';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -2261,6 +2538,8 @@
     tenHourAck: false
   };
   let currentStep = 1;
+  let currentTool = 'home';   // 'home' | 'tageserfassung' | 'abrechnung'
+  const TOOL_KEY = 'arbeitszeit_tool_v1';
 
   /* ===== Schema-Validation (defensiv) =====
    * Stellt sicher dass externe Daten (LocalStorage, Imports, URLs) ein
@@ -4020,8 +4299,46 @@
     applyTheme(theme);
   }
 
+  /* ===== Tool-Switcher ===== */
+  function showTool(name) {
+    if (!['home', 'tageserfassung', 'abrechnung'].includes(name)) name = 'home';
+    currentTool = name;
+    const tHome = document.getElementById('tool-home');
+    const tTag  = document.getElementById('tool-tageserfassung');
+    const tAbr  = document.getElementById('tool-abrechnung');
+    if (tHome) tHome.classList.toggle('hidden', name !== 'home');
+    if (tTag)  tTag.classList.toggle('hidden',  name !== 'tageserfassung');
+    if (tAbr)  tAbr.classList.toggle('hidden',  name !== 'abrechnung');
+
+    // Header-Chrome: Step-Indicator + Bundesland-Pille nur in Tageserfassung,
+    // Home-Button nur AUSSERHALB der Toolbox-Startseite.
+    const indicator = document.getElementById('step-indicator');
+    if (indicator) indicator.classList.toggle('hidden', name !== 'tageserfassung');
+    const headerHome = document.getElementById('headerHome');
+    if (headerHome) headerHome.classList.toggle('hidden', name === 'home');
+    const hSub = document.getElementById('header-sub');
+    if (hSub && name !== 'tageserfassung') {
+      hSub.textContent = '';
+      hSub.removeAttribute('data-status');
+    }
+    updateBundeslandDisplay();
+
+    // Lightweight Persistenz nur fuer Tool-Auswahl (keine PDFs/PII).
+    try { localStorage.setItem(TOOL_KEY, name); } catch (e) {}
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function loadCurrentTool() {
+    try {
+      const v = localStorage.getItem(TOOL_KEY);
+      if (v === 'tageserfassung' || v === 'abrechnung' || v === 'home') return v;
+    } catch (e) {}
+    return 'home';
+  }
+
   /* ===== Step Navigation ===== */
   function showStep(n) {
+    if (currentTool !== 'tageserfassung') showTool('tageserfassung');
     currentStep = n;
     for (let i = 1; i <= 5; i++) {
       document.getElementById('step' + i).classList.toggle('hidden', i !== n);
@@ -4121,7 +4438,7 @@
     const pill = document.getElementById('headerBundesland');
     const label = document.getElementById('headerBundeslandLabel');
     if (pill) {
-      pill.classList.toggle('hidden', !state.bundesland);
+      pill.classList.toggle('hidden', !state.bundesland || currentTool !== 'tageserfassung');
       const name = state.bundesland ? (BUNDESLAENDER.find(b => b.code === state.bundesland) || {}).name : null;
       pill.title = name ? 'Bundesland: ' + name + ' · klicken zum Ändern' : 'Bundesland ändern';
     }
@@ -4844,6 +5161,144 @@
     toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
   }
 
+  /* ===========================================================
+   * ===== Tool 2: Abrechnungs-Check (Bereitschaft + LRE) =====
+   * ===========================================================
+   *
+   * PRIVACY-VERTRAG:
+   *   - Alle PDFs werden ausschliesslich im Browser-RAM verarbeitet.
+   *   - NICHTS landet in localStorage / sessionStorage / IndexedDB.
+   *   - Keine Netzwerk-Aufrufe mit PDF-Daten.
+   *   - Beim Tool-Wechsel / Reload / abrReset() wird der RAM-State geleert.
+   *
+   * STAND: Phase 1 (UI-Skeleton + File-Slots + Privacy-Banner).
+   *        PDF-Parsing & Vergleich kommen in Phase 2/3.
+   */
+  const abrState = {
+    abrechnung:    null,   // { name, sizeKB, raw: ArrayBuffer, parsed: null }
+    bereitschaft:  null,
+  };
+
+  // Tarif-Saetze (Stand 2025/2026, aus Abrechnungen extrahiert).
+  // Werden in Phase 2 bevorzugt aus der hochgeladenen Abrechnung gelesen.
+  const ABR_RATES_DEFAULT = {
+    LRE1:        78.26,
+    LRE2:        51.22,
+    LRE3:        29.31,
+    Rufbereit:    2.85,
+    Nachtzulage:  3.73,
+  };
+
+  function abrInitFileInputs() {
+    const a = document.getElementById('abrFileAbrechnung');
+    const b = document.getElementById('abrFileBereitschaft');
+    if (a) a.addEventListener('change', (ev) => abrHandleFile('abrechnung', ev.target.files && ev.target.files[0]));
+    if (b) b.addEventListener('change', (ev) => abrHandleFile('bereitschaft', ev.target.files && ev.target.files[0]));
+  }
+
+  function abrSlotEl(kind) {
+    return document.getElementById(kind === 'abrechnung' ? 'abrSlotAbrechnung' : 'abrSlotBereitschaft');
+  }
+  function abrStatusEl(kind) {
+    return document.getElementById(kind === 'abrechnung' ? 'abrStatusAbrechnung' : 'abrStatusBereitschaft');
+  }
+
+  async function abrHandleFile(kind, file) {
+    const slot = abrSlotEl(kind);
+    const stat = abrStatusEl(kind);
+    if (!slot || !stat) return;
+    if (!file) return;
+
+    // Basis-Validierung: PDF-Mime ODER .pdf-Endung, max 12 MB
+    const isPdf = (file.type === 'application/pdf') || /\.pdf$/i.test(file.name);
+    if (!isPdf) {
+      slot.classList.remove('has-file');
+      slot.classList.add('error');
+      stat.textContent = 'Nur PDF-Dateien erlaubt.';
+      abrState[kind] = null;
+      abrRenderResult();
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      slot.classList.remove('has-file');
+      slot.classList.add('error');
+      stat.textContent = 'Datei ist groesser als 12 MB. Bitte verkleinern.';
+      abrState[kind] = null;
+      abrRenderResult();
+      return;
+    }
+
+    // Datei lokal in den Speicher laden (kein Upload!).
+    try {
+      const buf = await file.arrayBuffer();
+      abrState[kind] = {
+        name:   file.name,
+        sizeKB: Math.round(file.size / 102.4) / 10,  // 1 Nachkommastelle
+        raw:    buf,
+        parsed: null,
+      };
+      slot.classList.remove('error');
+      slot.classList.add('has-file');
+      stat.textContent = file.name + '  ·  ' + abrState[kind].sizeKB + ' KB';
+    } catch (e) {
+      slot.classList.remove('has-file');
+      slot.classList.add('error');
+      stat.textContent = 'Datei konnte nicht gelesen werden.';
+      abrState[kind] = null;
+      console.warn('abrHandleFile read error', e);
+    }
+    abrRenderResult();
+  }
+
+  function abrReset() {
+    abrState.abrechnung   = null;
+    abrState.bereitschaft = null;
+    ['abrechnung', 'bereitschaft'].forEach(k => {
+      const slot = abrSlotEl(k);
+      const stat = abrStatusEl(k);
+      if (slot) { slot.classList.remove('has-file'); slot.classList.remove('error'); }
+      if (stat) stat.textContent = 'Tippen oder Datei hierhin ziehen';
+      const inp = document.getElementById(k === 'abrechnung' ? 'abrFileAbrechnung' : 'abrFileBereitschaft');
+      if (inp) inp.value = '';
+    });
+    abrRenderResult();
+  }
+
+  function abrRenderResult() {
+    const el = document.getElementById('abrResult');
+    if (!el) return;
+    const haveA = !!abrState.abrechnung;
+    const haveB = !!abrState.bereitschaft;
+
+    if (!haveA && !haveB) {
+      el.classList.add('empty');
+      el.textContent = 'Noch keine Auswertung. Sobald beide PDFs gewählt sind, startet der Check automatisch.';
+      return;
+    }
+    if (haveA !== haveB) {
+      el.classList.add('empty');
+      const missing = haveA ? 'Bereitschafts-Liste' : 'Abrechnung';
+      el.textContent = 'Noch eine Datei fehlt: ' + missing + '.';
+      return;
+    }
+
+    // Beide da → in Phase 2 wird hier geparst. Heute Vorab-Info.
+    el.classList.remove('empty');
+    const a = abrState.abrechnung, b = abrState.bereitschaft;
+    el.innerHTML =
+      '<div class="abr-result-block">' +
+        '<h4>Dateien bereit</h4>' +
+        '<div><strong>Abrechnung:</strong> ' + escapeHtml(a.name) + ' (' + a.sizeKB + ' KB)</div>' +
+        '<div><strong>Bereitschafts-Liste:</strong> ' + escapeHtml(b.name) + ' (' + b.sizeKB + ' KB)</div>' +
+      '</div>' +
+      '<div class="abr-result-block">' +
+        '<h4>Naechster Schritt</h4>' +
+        '<div>PDF-Parsing &amp; Vergleich werden gerade vorbereitet (Phase 2). ' +
+        'Sobald aktiv, werden Monat, Layout, LRE1/2/3-Anzahl und Bereitschaftsstunden ' +
+        'automatisch verglichen und das Brutto geschaetzt — komplett offline.</div>' +
+      '</div>';
+  }
+
   /* ===== Service Worker (PWA Offline) ===== */
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -4880,19 +5335,51 @@
   initBundeslandSelect();
   const restoredStep = loadState();
   updateBundeslandDisplay();
-  showStep(1);
+  abrInitFileInputs();
+
+  // Welches Tool soll initial gezeigt werden?
+  // Regeln:
+  //   1) URL-Hash #import / #abrechnung gewinnt
+  //   2) Sonst: laufende Tageserfassung mit echten Eingaben → Tageserfassung
+  //   3) Sonst: zuletzt aktives Tool aus localStorage
+  //   4) Fallback: Toolbox-Startseite
+  const hash = (location.hash || '');
+  const lastTool = loadCurrentTool();
+  const hasOpenDay = !!(restoredStep && dayHasWork(state));
+  let initialTool = 'home';
+  if (hash.startsWith('#import=')) {
+    initialTool = 'tageserfassung';
+  } else if (hash === '#abrechnung') {
+    initialTool = 'abrechnung';
+  } else if (hasOpenDay) {
+    initialTool = 'tageserfassung';
+  } else if (lastTool === 'abrechnung') {
+    initialTool = 'abrechnung';
+  } else if (lastTool === 'tageserfassung' && restoredStep) {
+    initialTool = 'tageserfassung';
+  }
+
+  if (initialTool === 'tageserfassung') {
+    showTool('tageserfassung');
+    showStep(restoredStep || 1);
+  } else if (initialTool === 'abrechnung') {
+    showTool('abrechnung');
+  } else {
+    showTool('home');
+  }
+
   // Wenn echte Eingaben vom Vortag noch da sind, frag den User
   // ob er weitermachen oder den Tag archivieren will.
-  if (restoredStep && dayHasWork(state)) {
+  if (hasOpenDay) {
     setTimeout(() => showRestoreModal(restoredStep), 250);
   }
   // Tag-Import via URL-Hash (#import=...) — wenn vorhanden, Bestaetigungs-Modal anzeigen
-  if ((location.hash || '').startsWith('#import=')) {
+  if (hash.startsWith('#import=')) {
     setTimeout(handleImportHash, 300);
   }
   // Onboarding fuer Erst-Nutzer (3 Slides). Erscheint nur einmal.
   // Wird nicht ueber dem Restore-Modal oder Import-Hash gezeigt.
-  if (!isOnboardingDone() && !restoredStep && !(location.hash || '').startsWith('#import=')) {
+  if (!isOnboardingDone() && !restoredStep && !hash.startsWith('#import=')) {
     setTimeout(showOnboarding, 350);
   }
 </script>

@@ -7,6 +7,26 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.24.0] — 2026-05-22
+
+### Hinzugefügt
+- **Toolbox-Konzept** — neue Startseite mit Tool-Auswahl. App ist nicht mehr ein einzelner Workflow, sondern Plattform für mehrere Werkzeuge.
+- **Tool 2 (Beta): „Abrechnung prüfen"** — Skeleton mit zwei Pflicht-Upload-Slots (Abrechnung + Bereitschafts-Liste), Privacy-Banner und Status-Feedback. PDFs werden ausschließlich im Browser-RAM gehalten, **nichts** geht ins Netzwerk oder in `localStorage`.
+- **Tool-Switcher im Header** (`← Tools`) — überall außerhalb der Startseite sichtbar.
+- Persistente Tool-Auswahl per `localStorage` (Key `arbeitszeit_tool_v1`) — App startet im zuletzt genutzten Werkzeug.
+
+### Geändert
+- Bestehende Tageserfassung (Steps 1–5) als „Tool 1" gekapselt — funktional unverändert.
+- Step-Indicator und Bundesland-Pille im Header nur noch in Tageserfassung sichtbar.
+- Init-Logik priorisiert in dieser Reihenfolge: URL-Hash (`#import=…`, `#abrechnung`) → laufende Tageserfassung → letztes Tool → Toolbox-Startseite.
+
+### Geplant (Phase 2/3)
+- pdf.js (lazy-loaded mit SRI) für clientseitiges PDF-Parsing.
+- Layout- und Monatsabgleich der zwei PDFs.
+- LRE1/2/3-Vergleich + Brutto-Schätzung mit automatischer Nachzahlungs-Block-Erkennung.
+
+---
+
 ## [1.23.1] — 2026-05-20
 
 ### Geändert
