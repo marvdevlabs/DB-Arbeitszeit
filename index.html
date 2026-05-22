@@ -518,6 +518,101 @@
     margin-top: 12px; padding-top: 12px;
     border-top: 1px dashed var(--border);
   }
+  .abr-status-row {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .abr-status-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 100px;
+    font-size: 11.5px; font-weight: 700; letter-spacing: 0.2px;
+  }
+  .abr-status-badge.ok    { background: rgba(46, 160, 67, 0.14); color: #2EA043; }
+  .abr-status-badge.warn  { background: rgba(255, 184, 77, 0.18); color: #B7791F; }
+  .abr-status-badge.err   { background: rgba(236, 0, 22, 0.10);   color: var(--db-red); }
+  .abr-status-badge.info  { background: var(--bg-button-soft);    color: var(--text-secondary); }
+  body[data-theme="dark"] .abr-status-badge.warn { color: #FFD180; }
+
+  .abr-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 12.5px;
+    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .abr-table th, .abr-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--border-light);
+    text-align: left;
+  }
+  .abr-table th {
+    font-size: 11px; font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.3px;
+    background: var(--bg-button-soft);
+  }
+  .abr-table td.num, .abr-table th.num { text-align: right; }
+  .abr-table tr.diff td { background: rgba(236, 0, 22, 0.06); color: var(--db-red); font-weight: 600; }
+  .abr-table tr.match td .check { color: #2EA043; }
+
+  .abr-brutto {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-top: 4px;
+    font-size: 13px;
+  }
+  .abr-brutto .val {
+    font-size: 18px; font-weight: 800;
+    color: var(--text-strong);
+    font-variant-numeric: tabular-nums;
+  }
+  .abr-brutto .val.diff { color: var(--db-red); }
+  .abr-brutto .val.ok   { color: #2EA043; }
+
+  details.abr-details {
+    margin-top: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-input);
+  }
+  details.abr-details > summary {
+    cursor: pointer; padding: 8px 12px;
+    font-size: 12px; font-weight: 700;
+    color: var(--text-secondary);
+    list-style: none;
+  }
+  details.abr-details > summary::-webkit-details-marker { display: none; }
+  details.abr-details > summary::before {
+    content: '▸';
+    display: inline-block;
+    margin-right: 6px;
+    transition: transform 0.15s;
+  }
+  details.abr-details[open] > summary::before { transform: rotate(90deg); }
+  details.abr-details pre {
+    margin: 0; padding: 10px 12px;
+    border-top: 1px solid var(--border-light);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px; line-height: 1.4;
+    color: var(--text-secondary);
+    white-space: pre-wrap; word-break: break-word;
+    max-height: 240px; overflow: auto;
+  }
+  .abr-loading {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    font-size: 13px; color: var(--text-secondary);
+  }
+  .abr-loading .spin {
+    width: 16px; height: 16px;
+    border: 2.5px solid var(--border-input);
+    border-top-color: var(--db-red);
+    border-radius: 50%;
+    animation: abr-spin 0.8s linear infinite;
+  }
+  @keyframes abr-spin { to { transform: rotate(360deg); } }
+  .abr-hint {
+    font-size: 11.5px; color: var(--text-muted);
+    line-height: 1.5; margin-top: 4px;
+  }
 
   .form-row { margin-bottom: 12px; }
   label { display: block; font-weight: 600; margin-bottom: 4px; color: var(--text-strong); font-size: 13px; }
@@ -2368,7 +2463,7 @@
 <div id="print-area" aria-hidden="true"></div>
 
 <script>
-  const APP_VERSION = '1.24.0';
+  const APP_VERSION = '1.25.0';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -5168,19 +5263,27 @@
    * PRIVACY-VERTRAG:
    *   - Alle PDFs werden ausschliesslich im Browser-RAM verarbeitet.
    *   - NICHTS landet in localStorage / sessionStorage / IndexedDB.
-   *   - Keine Netzwerk-Aufrufe mit PDF-Daten.
+   *   - Netzwerk-Zugriff NUR fuer pdf.js (Library + Worker) via SRI-gepruefte
+   *     CDN-URL. PDF-Daten verlassen NIE das Geraet.
    *   - Beim Tool-Wechsel / Reload / abrReset() wird der RAM-State geleert.
-   *
-   * STAND: Phase 1 (UI-Skeleton + File-Slots + Privacy-Banner).
-   *        PDF-Parsing & Vergleich kommen in Phase 2/3.
    */
+
+  /* ---- pdf.js Konstanten (alle SRI-geprueft) ---- */
+  const PDFJS_URL         = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+  const PDFJS_SRI         = 'sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e';
+  const PDFJS_WORKER_URL  = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+  // Worker wird als Blob geladen + manuell gegen diesen SHA-384 (Base64) geprueft,
+  // damit worker-src 'self' blob: in der CSP eng bleibt.
+  const PDFJS_WORKER_SHA  = 'SnzOobpRMLXZ52iJvZm/C0fYw0OQemTXzTjIsdsfMcrCtCEe9qgzxTd3RSklO5x2';
+
   const abrState = {
-    abrechnung:    null,   // { name, sizeKB, raw: ArrayBuffer, parsed: null }
+    abrechnung:    null,   // { name, sizeKB, raw, parsed:{layoutOk, ext, parsed} }
     bereitschaft:  null,
+    comparing:     false,
   };
 
-  // Tarif-Saetze (Stand 2025/2026, aus Abrechnungen extrahiert).
-  // Werden in Phase 2 bevorzugt aus der hochgeladenen Abrechnung gelesen.
+  // Default-Tarif-Saetze (2025/2026). Werden, sobald moeglich, durch die
+  // tatsaechlich in der Abrechnung gefundenen "Faktor"-Werte ueberschrieben.
   const ABR_RATES_DEFAULT = {
     LRE1:        78.26,
     LRE2:        51.22,
@@ -5189,70 +5292,417 @@
     Nachtzulage:  3.73,
   };
 
+  const MONAT_NAMES = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  function monthLabel(m, y) {
+    if (!m || m < 1 || m > 12 || !y) return '?';
+    return MONAT_NAMES[m-1] + ' ' + (y < 100 ? 2000 + y : y);
+  }
+  function abrRound2(n) { return Math.round(n * 100) / 100; }
+  function abrFmtEUR(n) {
+    if (!Number.isFinite(n)) return '–';
+    return n.toFixed(2).replace('.', ',') + ' €';
+  }
+  function abrFmtNum(n, dec) {
+    if (!Number.isFinite(n)) return '–';
+    return n.toFixed(dec || 0).replace('.', ',');
+  }
+
+  /* ---- pdf.js Loader (SRI fuer Lib + Worker) ---- */
+  let _pdfjsLoading = null;
+  async function loadPdfJs() {
+    if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
+      return window.pdfjsLib;
+    }
+    if (_pdfjsLoading) return _pdfjsLoading;
+    _pdfjsLoading = (async () => {
+      // 1) Hauptlib via <script integrity="...">.
+      if (!window.pdfjsLib) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = PDFJS_URL;
+          script.integrity = PDFJS_SRI;
+          script.crossOrigin = 'anonymous';
+          script.referrerPolicy = 'no-referrer';
+          script.onload = resolve;
+          script.onerror = () => { _pdfjsLoading = null; reject(new Error('pdf.js konnte nicht geladen werden. Offline?')); };
+          document.head.appendChild(script);
+        });
+      }
+      if (!window.pdfjsLib) throw new Error('pdf.js Library nicht verfuegbar.');
+      // 2) Worker als Blob laden, SHA-384 vergleichen, dann als blob:-URL setzen.
+      const resp = await fetch(PDFJS_WORKER_URL, { credentials: 'omit', referrerPolicy: 'no-referrer' });
+      if (!resp.ok) throw new Error('pdf.js Worker download fehlgeschlagen (HTTP ' + resp.status + ').');
+      const workerBuf = await resp.arrayBuffer();
+      const hashBuf = await crypto.subtle.digest('SHA-384', workerBuf);
+      let hashB64 = '';
+      const u8 = new Uint8Array(hashBuf);
+      for (let i = 0; i < u8.length; i++) hashB64 += String.fromCharCode(u8[i]);
+      hashB64 = btoa(hashB64);
+      if (hashB64 !== PDFJS_WORKER_SHA) {
+        throw new Error('pdf.js Worker SRI-Mismatch — Abbruch.');
+      }
+      const blob = new Blob([workerBuf], { type: 'application/javascript' });
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
+      return window.pdfjsLib;
+    })();
+    return _pdfjsLoading;
+  }
+
+  /* ---- PDF -> Text (mit Y-Sortierung, damit Spalten-Layout halbwegs erhalten bleibt) ---- */
+  async function extractTextFromPdf(arrayBuffer) {
+    const pdfjsLib = await loadPdfJs();
+    // pdf.js mutiert den Input — daher Kopie uebergeben (Original-Buffer bleibt intakt).
+    const copy = arrayBuffer.slice(0);
+    const task = pdfjsLib.getDocument({
+      data: copy,
+      isEvalSupported: false,
+      useSystemFonts: true,
+      disableFontFace: true,
+    });
+    const pdf = await task.promise;
+    const pages = [];
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      const tc = await page.getTextContent();
+      const items = tc.items.map(it => ({
+        str: it.str,
+        x: it.transform[4],
+        y: it.transform[5],
+      }));
+      items.sort((a, b) => (b.y - a.y) || (a.x - b.x));
+      const lines = [];
+      let cur = null;
+      for (const it of items) {
+        if (!cur || Math.abs(cur.y - it.y) > 2) {
+          cur = { y: it.y, items: [] };
+          lines.push(cur);
+        }
+        cur.items.push(it);
+      }
+      lines.forEach(l => l.items.sort((a, b) => a.x - b.x));
+      const text = lines
+        .map(l => l.items.map(i => i.str).join(' ').replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+        .join('\n');
+      pages.push(text);
+    }
+    return { pages, full: pages.join('\n\n'), numPages: pdf.numPages };
+  }
+
+  /* ---- Layout-Detektoren ---- */
+  function looksLikeAbrechnung(text) {
+    const hits = [
+      /Abrechnungsbescheinigung/i.test(text),
+      /Lohnart/i.test(text),
+      /\b243\b/.test(text),
+      /\b699\b/.test(text) || /\bBrutto\b/.test(text),
+    ];
+    return hits.filter(Boolean).length >= 3;
+  }
+  function looksLikeBereitschaft(text) {
+    const hits = [
+      /Bereitschaft/i.test(text),
+      /LRE\s*[123]/i.test(text),
+      /(Std\b|Stunden|h\b)/i.test(text),
+    ];
+    return hits.filter(Boolean).length >= 2;
+  }
+
+  /* ---- Monat-Detektion ---- */
+  function parseMonthFromText(text) {
+    const t = text.replace(/\s+/g, ' ');
+    // 1) "Januar 2026", "im Monat Januar 2026"
+    const re1 = new RegExp('\\b(' + MONAT_NAMES.join('|') + ')\\s+(20\\d{2})\\b', 'i');
+    let m = t.match(re1);
+    if (m) {
+      const idx = MONAT_NAMES.findIndex(n => n.toLowerCase() === m[1].toLowerCase());
+      if (idx >= 0) return { month: idx + 1, year: parseInt(m[2], 10), src: m[0] };
+    }
+    // 2) MM/YYYY oder MM.YYYY
+    m = t.match(/\b(0[1-9]|1[0-2])[./](20\d{2})\b/);
+    if (m) return { month: parseInt(m[1], 10), year: parseInt(m[2], 10), src: m[0] };
+    // 3) MM.YY (kurzform)
+    m = t.match(/\b(0[1-9]|1[0-2])\.(\d{2})\b/);
+    if (m) return { month: parseInt(m[1], 10), year: 2000 + parseInt(m[2], 10), src: m[0] };
+    return null;
+  }
+
+  /* ---- Zahlen aus Zeile extrahieren (DE-Format: 1.234,56 / 78,26 / 5) ---- */
+  function parseLineNumbers(line) {
+    const out = [];
+    const re = /\d{1,3}(?:\.\d{3})+(?:,\d{1,3})?|\d+(?:,\d{1,3})?/g;
+    let m;
+    while ((m = re.exec(line)) !== null) {
+      const norm = m[0].replace(/\./g, '').replace(',', '.');
+      const v = parseFloat(norm);
+      if (Number.isFinite(v)) out.push(v);
+    }
+    return out;
+  }
+
+  /* ---- Abrechnung parsen (block-aware) ---- */
+  function parseAbrechnung(text) {
+    const result = {
+      type: 'abrechnung',
+      months: [],
+      rates: Object.assign({}, ABR_RATES_DEFAULT),
+      warnings: [],
+    };
+    // Block-Marker "MM.YY/N"
+    const blockRe = /\b(0[1-9]|1[0-2])\.(\d{2})\s*\/\s*(\d{1,2})\b/g;
+    const matches = [];
+    let mm;
+    while ((mm = blockRe.exec(text)) !== null) {
+      matches.push({
+        idx:   mm.index,
+        month: parseInt(mm[1], 10),
+        year:  2000 + parseInt(mm[2], 10),
+        n:     parseInt(mm[3], 10),
+        raw:   mm[0],
+      });
+    }
+    if (matches.length === 0) {
+      const mp = parseMonthFromText(text);
+      if (mp) matches.push({ idx: 0, month: mp.month, year: mp.year, n: 1, raw: '(implizit)' });
+    }
+    const segs = matches.map((m, i) => ({
+      ...m,
+      text: text.slice(m.idx, i + 1 < matches.length ? matches[i + 1].idx : text.length),
+    }));
+    const monthsMap = new Map();
+    const _locks = {};
+    segs.forEach(seg => {
+      const lines = seg.text.split('\n');
+      const block = {
+        n: seg.n, raw: seg.raw,
+        lre1: { cnt: 0, fak: 0, betrag: 0 },
+        lre2: { cnt: 0, fak: 0, betrag: 0 },
+        lre3: { cnt: 0, fak: 0, betrag: 0 },
+        ruf:  { std: 0, fak: 0, betrag: 0 },
+        nacht:{ std: 0, fak: 0, betrag: 0 },
+        brutto: 0,
+      };
+      for (const line of lines) {
+        // LRE 1/2/3 — Label "LRE1/2/3" und/oder Lohnart 243
+        const lreM = line.match(/\bLRE\s*([123])\b/i);
+        if (lreM) {
+          const k = 'lre' + lreM[1];
+          const nums = parseLineNumbers(line);
+          // typisches Schema: [243?, Anzahl, Faktor, Betrag]
+          if (nums.length >= 3) {
+            const last3 = nums.slice(-3);
+            block[k].cnt    = last3[0];
+            block[k].fak    = last3[1];
+            block[k].betrag = last3[2];
+          }
+          continue;
+        }
+        // Rufbereitschaft (Lohnart 314)
+        if (/Rufbereit/i.test(line) || /\b314\b/.test(line)) {
+          const nums = parseLineNumbers(line);
+          if (nums.length >= 3) {
+            const last3 = nums.slice(-3);
+            block.ruf.std = last3[0]; block.ruf.fak = last3[1]; block.ruf.betrag = last3[2];
+          }
+          continue;
+        }
+        // Nachtzulage (Lohnart 216)
+        if (/Nachtzulage/i.test(line) || (/\b216\b/.test(line) && /Nacht/i.test(line))) {
+          const nums = parseLineNumbers(line);
+          if (nums.length >= 3) {
+            const last3 = nums.slice(-3);
+            block.nacht.std = last3[0]; block.nacht.fak = last3[1]; block.nacht.betrag = last3[2];
+          }
+          continue;
+        }
+        // Brutto (Lohnart 699 oder Label)
+        if (/\b699\b/.test(line) || /\bBrutto(?:bezuege|verdienst|lohn)?\b/i.test(line)) {
+          const nums = parseLineNumbers(line);
+          if (nums.length >= 1) block.brutto = Math.max(block.brutto, nums[nums.length - 1]);
+        }
+      }
+      const key = String(seg.month).padStart(2, '0') + '.' + String(seg.year).slice(-2);
+      if (!monthsMap.has(key)) {
+        monthsMap.set(key, { monthKey: key, month: seg.month, year: seg.year, blocks: [] });
+      }
+      monthsMap.get(key).blocks.push(block);
+      // Tarif-Saetze aus erstem Block mit Werten lernen
+      if (block.lre1.fak && !_locks.lre1)  { result.rates.LRE1        = block.lre1.fak;  _locks.lre1  = true; }
+      if (block.lre2.fak && !_locks.lre2)  { result.rates.LRE2        = block.lre2.fak;  _locks.lre2  = true; }
+      if (block.lre3.fak && !_locks.lre3)  { result.rates.LRE3        = block.lre3.fak;  _locks.lre3  = true; }
+      if (block.ruf.fak  && !_locks.ruf)   { result.rates.Rufbereit   = block.ruf.fak;   _locks.ruf   = true; }
+      if (block.nacht.fak&& !_locks.nacht) { result.rates.Nachtzulage = block.nacht.fak; _locks.nacht = true; }
+    });
+    for (const monthObj of monthsMap.values()) {
+      const sum = { lre1Cnt:0, lre2Cnt:0, lre3Cnt:0, rufStd:0, nachtStd:0, brutto:0 };
+      monthObj.blocks.forEach(b => {
+        sum.lre1Cnt  += b.lre1.cnt;
+        sum.lre2Cnt  += b.lre2.cnt;
+        sum.lre3Cnt  += b.lre3.cnt;
+        sum.rufStd   += b.ruf.std;
+        sum.nachtStd += b.nacht.std;
+        sum.brutto   += b.brutto;
+      });
+      monthObj.sum = sum;
+      result.months.push(monthObj);
+    }
+    if (!result.months.length) result.warnings.push('Kein Abrechnungs-Block erkannt.');
+    return result;
+  }
+
+  /* ---- Bereitschafts-Liste parsen ---- */
+  function parseBereitschaft(text) {
+    const result = {
+      type: 'bereitschaft',
+      month: null, year: null,
+      lre1Cnt: 0, lre2Cnt: 0, lre3Cnt: 0,
+      totalStd: 0,
+      warnings: [],
+    };
+    const mp = parseMonthFromText(text);
+    if (mp) { result.month = mp.month; result.year = mp.year; }
+    const lines = text.split('\n');
+    let inSummary = false;
+    let summaryLre1 = 0, summaryLre2 = 0, summaryLre3 = 0, summaryStd = 0;
+    for (const line of lines) {
+      if (/(^|\s)(Summe|Gesamt|Auswertung|Statistik|Monatssumme|Gesamtsumme)/i.test(line)) {
+        inSummary = true;
+      }
+      if (inSummary) {
+        // Beide Reihenfolgen erlauben:
+        //   "2 LRE1, 1 LRE2"  (Anzahl links)
+        //   "LRE 1: 2, LRE 2: 1"  (Anzahl rechts)
+        const reLeft  = /(\d+)\s*[xX]?\s*LRE\s*([123])\b/gi;
+        const reRight = /LRE\s*([123])\b\s*[:.\-]?\s*(\d+)/gi;
+        let sm;
+        while ((sm = reLeft.exec(line)) !== null) {
+          const cnt = parseInt(sm[1], 10), cls = parseInt(sm[2], 10);
+          if (cls === 1) summaryLre1 = Math.max(summaryLre1, cnt);
+          if (cls === 2) summaryLre2 = Math.max(summaryLre2, cnt);
+          if (cls === 3) summaryLre3 = Math.max(summaryLre3, cnt);
+        }
+        while ((sm = reRight.exec(line)) !== null) {
+          const cls = parseInt(sm[1], 10), cnt = parseInt(sm[2], 10);
+          if (cls === 1) summaryLre1 = Math.max(summaryLre1, cnt);
+          if (cls === 2) summaryLre2 = Math.max(summaryLre2, cnt);
+          if (cls === 3) summaryLre3 = Math.max(summaryLre3, cnt);
+        }
+        const sh = line.match(/(\d{1,4}[,.]\d{2})\s*(?:Std|Stunden|h\b)/i);
+        if (sh) {
+          const v = parseFloat(sh[1].replace(',', '.'));
+          if (v > 0) summaryStd = Math.max(summaryStd, v);
+        }
+        continue;
+      }
+      // Pro-Tag-Zeile zaehlen
+      if (/\bLRE\s*1\b/i.test(line)) result.lre1Cnt++;
+      if (/\bLRE\s*2\b/i.test(line)) result.lre2Cnt++;
+      if (/\bLRE\s*3\b/i.test(line)) result.lre3Cnt++;
+    }
+    // Wenn Summen-Block welche fand, bevorzugen — sonst per-Tag-Zaehlung behalten.
+    if (summaryLre1) result.lre1Cnt = summaryLre1;
+    if (summaryLre2) result.lre2Cnt = summaryLre2;
+    if (summaryLre3) result.lre3Cnt = summaryLre3;
+    if (summaryStd)  result.totalStd = summaryStd;
+    if (!result.totalStd) {
+      let sum = 0;
+      for (const line of lines) {
+        const m = line.match(/(\d{1,3}[,.]\d{2})\s*(?:Std|h\b)/i);
+        if (m) sum += parseFloat(m[1].replace(',', '.'));
+      }
+      if (sum > 0) result.totalStd = sum;
+    }
+    if (!result.month) result.warnings.push('Monat konnte nicht erkannt werden.');
+    if (!(result.lre1Cnt + result.lre2Cnt + result.lre3Cnt)) result.warnings.push('Keine LRE-Eintraege gefunden.');
+    return result;
+  }
+
+  /* ---- Vergleich ---- */
+  function compareAbrBer(abr, ber) {
+    const targetKey = String(ber.month).padStart(2, '0') + '.' + String(ber.year).slice(-2);
+    const monthEntry = abr.months.find(m => m.monthKey === targetKey);
+    const r = {
+      monthMatch: !!monthEntry,
+      targetKey,
+      abrMonth: monthEntry || null,
+      abrMonthsFound: abr.months.map(m => m.monthKey),
+      diffs: [],
+      rates: abr.rates,
+      estimatedBrutto: null,
+    };
+    if (!monthEntry) return r;
+    const s = monthEntry.sum;
+    const exp = {
+      lre1Cnt: ber.lre1Cnt,
+      lre2Cnt: ber.lre2Cnt,
+      lre3Cnt: ber.lre3Cnt,
+      rufStd:  Math.round(ber.totalStd),  // Abrechnung rundet auf volle Stunden
+    };
+    ['lre1Cnt','lre2Cnt','lre3Cnt','rufStd'].forEach(k => {
+      if (s[k] !== exp[k]) r.diffs.push({ field: k, expected: exp[k], paid: s[k] });
+    });
+    const rates = abr.rates;
+    r.estimatedBrutto = abrRound2(
+      ber.lre1Cnt * rates.LRE1 +
+      ber.lre2Cnt * rates.LRE2 +
+      ber.lre3Cnt * rates.LRE3 +
+      Math.round(ber.totalStd) * rates.Rufbereit
+    );
+    return r;
+  }
+
+  /* ---- UI: File-Handling ---- */
   function abrInitFileInputs() {
     const a = document.getElementById('abrFileAbrechnung');
     const b = document.getElementById('abrFileBereitschaft');
     if (a) a.addEventListener('change', (ev) => abrHandleFile('abrechnung', ev.target.files && ev.target.files[0]));
     if (b) b.addEventListener('change', (ev) => abrHandleFile('bereitschaft', ev.target.files && ev.target.files[0]));
   }
-
-  function abrSlotEl(kind) {
-    return document.getElementById(kind === 'abrechnung' ? 'abrSlotAbrechnung' : 'abrSlotBereitschaft');
-  }
-  function abrStatusEl(kind) {
-    return document.getElementById(kind === 'abrechnung' ? 'abrStatusAbrechnung' : 'abrStatusBereitschaft');
-  }
+  function abrSlotEl(kind)   { return document.getElementById(kind === 'abrechnung' ? 'abrSlotAbrechnung'   : 'abrSlotBereitschaft'); }
+  function abrStatusEl(kind) { return document.getElementById(kind === 'abrechnung' ? 'abrStatusAbrechnung' : 'abrStatusBereitschaft'); }
 
   async function abrHandleFile(kind, file) {
     const slot = abrSlotEl(kind);
     const stat = abrStatusEl(kind);
-    if (!slot || !stat) return;
-    if (!file) return;
-
-    // Basis-Validierung: PDF-Mime ODER .pdf-Endung, max 12 MB
+    if (!slot || !stat || !file) return;
     const isPdf = (file.type === 'application/pdf') || /\.pdf$/i.test(file.name);
     if (!isPdf) {
-      slot.classList.remove('has-file');
-      slot.classList.add('error');
+      slot.classList.remove('has-file'); slot.classList.add('error');
       stat.textContent = 'Nur PDF-Dateien erlaubt.';
-      abrState[kind] = null;
-      abrRenderResult();
-      return;
+      abrState[kind] = null; abrRenderIdle(); return;
     }
     if (file.size > 12 * 1024 * 1024) {
-      slot.classList.remove('has-file');
-      slot.classList.add('error');
-      stat.textContent = 'Datei ist groesser als 12 MB. Bitte verkleinern.';
-      abrState[kind] = null;
-      abrRenderResult();
-      return;
+      slot.classList.remove('has-file'); slot.classList.add('error');
+      stat.textContent = 'Datei ist groesser als 12 MB.';
+      abrState[kind] = null; abrRenderIdle(); return;
     }
-
-    // Datei lokal in den Speicher laden (kein Upload!).
     try {
       const buf = await file.arrayBuffer();
       abrState[kind] = {
         name:   file.name,
-        sizeKB: Math.round(file.size / 102.4) / 10,  // 1 Nachkommastelle
+        sizeKB: Math.round(file.size / 102.4) / 10,
         raw:    buf,
         parsed: null,
       };
-      slot.classList.remove('error');
-      slot.classList.add('has-file');
+      slot.classList.remove('error'); slot.classList.add('has-file');
       stat.textContent = file.name + '  ·  ' + abrState[kind].sizeKB + ' KB';
     } catch (e) {
-      slot.classList.remove('has-file');
-      slot.classList.add('error');
+      slot.classList.remove('has-file'); slot.classList.add('error');
       stat.textContent = 'Datei konnte nicht gelesen werden.';
       abrState[kind] = null;
       console.warn('abrHandleFile read error', e);
     }
-    abrRenderResult();
+    if (abrState.abrechnung && abrState.bereitschaft) {
+      abrTryCompare();
+    } else {
+      abrRenderIdle();
+    }
   }
 
   function abrReset() {
-    abrState.abrechnung   = null;
+    abrState.abrechnung = null;
     abrState.bereitschaft = null;
+    abrState.comparing = false;
     ['abrechnung', 'bereitschaft'].forEach(k => {
       const slot = abrSlotEl(k);
       const stat = abrStatusEl(k);
@@ -5261,15 +5711,45 @@
       const inp = document.getElementById(k === 'abrechnung' ? 'abrFileAbrechnung' : 'abrFileBereitschaft');
       if (inp) inp.value = '';
     });
-    abrRenderResult();
+    abrRenderIdle();
   }
 
-  function abrRenderResult() {
+  async function abrTryCompare() {
+    if (!abrState.abrechnung || !abrState.bereitschaft) return;
+    if (abrState.comparing) return;
+    abrState.comparing = true;
+    abrRenderLoading();
+    try {
+      if (!abrState.abrechnung.parsed) {
+        const ext = await extractTextFromPdf(abrState.abrechnung.raw);
+        const layoutOk = looksLikeAbrechnung(ext.full);
+        const parsed = layoutOk ? parseAbrechnung(ext.full) : null;
+        abrState.abrechnung.parsed = { layoutOk, ext, parsed };
+      }
+      if (!abrState.bereitschaft.parsed) {
+        const ext = await extractTextFromPdf(abrState.bereitschaft.raw);
+        const layoutOk = looksLikeBereitschaft(ext.full);
+        const parsed = layoutOk ? parseBereitschaft(ext.full) : null;
+        abrState.bereitschaft.parsed = { layoutOk, ext, parsed };
+      }
+      const cmp = (abrState.abrechnung.parsed.parsed && abrState.bereitschaft.parsed.parsed)
+        ? compareAbrBer(abrState.abrechnung.parsed.parsed, abrState.bereitschaft.parsed.parsed)
+        : null;
+      abrState.comparing = false;
+      abrRenderComparison(cmp);
+    } catch (e) {
+      console.error('abrTryCompare error:', e);
+      abrState.comparing = false;
+      abrRenderError(e && e.message ? e.message : 'Unerwarteter Fehler beim Parsen.');
+    }
+  }
+
+  /* ---- UI: Rendering ---- */
+  function abrRenderIdle() {
     const el = document.getElementById('abrResult');
     if (!el) return;
     const haveA = !!abrState.abrechnung;
     const haveB = !!abrState.bereitschaft;
-
     if (!haveA && !haveB) {
       el.classList.add('empty');
       el.textContent = 'Noch keine Auswertung. Sobald beide PDFs gewählt sind, startet der Check automatisch.';
@@ -5281,22 +5761,163 @@
       el.textContent = 'Noch eine Datei fehlt: ' + missing + '.';
       return;
     }
-
-    // Beide da → in Phase 2 wird hier geparst. Heute Vorab-Info.
+  }
+  // Abwaerts-Kompat: einige Stellen riefen "abrRenderResult" — leiten wir um.
+  function abrRenderResult() {
+    if (abrState.abrechnung && abrState.bereitschaft) abrTryCompare();
+    else abrRenderIdle();
+  }
+  function abrRenderLoading() {
+    const el = document.getElementById('abrResult');
+    if (!el) return;
     el.classList.remove('empty');
-    const a = abrState.abrechnung, b = abrState.bereitschaft;
+    el.innerHTML = '<div class="abr-loading"><span class="spin"></span>PDFs werden lokal ausgewertet …</div>';
+  }
+  function abrRenderError(msg) {
+    const el = document.getElementById('abrResult');
+    if (!el) return;
+    el.classList.remove('empty');
     el.innerHTML =
       '<div class="abr-result-block">' +
-        '<h4>Dateien bereit</h4>' +
-        '<div><strong>Abrechnung:</strong> ' + escapeHtml(a.name) + ' (' + a.sizeKB + ' KB)</div>' +
-        '<div><strong>Bereitschafts-Liste:</strong> ' + escapeHtml(b.name) + ' (' + b.sizeKB + ' KB)</div>' +
-      '</div>' +
-      '<div class="abr-result-block">' +
-        '<h4>Naechster Schritt</h4>' +
-        '<div>PDF-Parsing &amp; Vergleich werden gerade vorbereitet (Phase 2). ' +
-        'Sobald aktiv, werden Monat, Layout, LRE1/2/3-Anzahl und Bereitschaftsstunden ' +
-        'automatisch verglichen und das Brutto geschaetzt — komplett offline.</div>' +
+        '<div class="abr-status-row"><span class="abr-status-badge err">Fehler</span></div>' +
+        '<div>' + escapeHtml(msg) + '</div>' +
+        '<div class="abr-hint">Falls die App offline ist, kann pdf.js nicht nachgeladen werden — bitte einmal mit Internet oeffnen.</div>' +
       '</div>';
+  }
+  function abrRenderComparison(cmp) {
+    const el = document.getElementById('abrResult');
+    if (!el) return;
+    el.classList.remove('empty');
+    const a = abrState.abrechnung.parsed;
+    const b = abrState.bereitschaft.parsed;
+    const aLayout = a.layoutOk;
+    const bLayout = b.layoutOk;
+    let html = '';
+
+    // 1) Layout
+    html += '<div class="abr-result-block">';
+    html += '<h4>1. Layout-Check</h4>';
+    html += '<div class="abr-status-row">';
+    html += '<span class="abr-status-badge ' + (aLayout ? 'ok' : 'err') + '">Abrechnung: ' + (aLayout ? 'erkannt' : 'unbekannt') + '</span>';
+    html += '<span class="abr-status-badge ' + (bLayout ? 'ok' : 'err') + '">Bereitschafts-Liste: ' + (bLayout ? 'erkannt' : 'unbekannt') + '</span>';
+    html += '</div>';
+    if (!aLayout || !bLayout) {
+      html += '<div class="abr-hint">Eine der Dateien sieht nicht aus wie der erwartete Typ. Vergleich abgebrochen — bitte richtige Dateien laden.</div>';
+      html += abrRawSection(a, b);
+      el.innerHTML = html;
+      return;
+    }
+    if (!a.parsed || !b.parsed) {
+      html += '<div class="abr-hint">Layout erkannt, aber Inhalte konnten nicht ausgelesen werden.</div>';
+      html += abrRawSection(a, b);
+      el.innerHTML = html;
+      return;
+    }
+    html += '</div>';
+
+    // 2) Monat
+    const ber = b.parsed;
+    const abr = a.parsed;
+    const berMonth = monthLabel(ber.month, ber.year);
+    html += '<div class="abr-result-block">';
+    html += '<h4>2. Monat-Abgleich</h4>';
+    if (cmp && cmp.monthMatch) {
+      html += '<div class="abr-status-row"><span class="abr-status-badge ok">Monat passt: ' + escapeHtml(berMonth) + '</span></div>';
+      const blocks = cmp.abrMonth.blocks;
+      if (blocks.length > 1) {
+        const blockTags = blocks.map(b => b.raw).join(', ');
+        html += '<div class="abr-hint">' + blocks.length + ' Bloecke fuer diesen Monat erkannt (Hauptmonat + Nachzahlungen): ' + escapeHtml(blockTags) + '. Werte sind summiert.</div>';
+      } else {
+        html += '<div class="abr-hint">Block <code>' + escapeHtml(blocks[0].raw) + '</code> verwendet.</div>';
+      }
+    } else {
+      html += '<div class="abr-status-row"><span class="abr-status-badge err">Monat passt nicht</span></div>';
+      const found = (cmp && cmp.abrMonthsFound.length) ? cmp.abrMonthsFound.join(', ') : '–';
+      html += '<div class="abr-hint">Bereitschafts-Liste: <strong>' + escapeHtml(berMonth) + '</strong>. In Abrechnung gefunden: <strong>' + escapeHtml(found) + '</strong>.</div>';
+      html += abrRawSection(a, b);
+      el.innerHTML = html;
+      return;
+    }
+    html += '</div>';
+
+    // 3) Vergleichstabelle
+    const s = cmp.abrMonth.sum;
+    const rows = [
+      { label: 'LRE 1 (Ersteinsatz)',     exp: ber.lre1Cnt,                paid: s.lre1Cnt, unit: 'x' },
+      { label: 'LRE 2 (Folge-Einsatz)',   exp: ber.lre2Cnt,                paid: s.lre2Cnt, unit: 'x' },
+      { label: 'LRE 3 (telefonisch)',     exp: ber.lre3Cnt,                paid: s.lre3Cnt, unit: 'x' },
+      { label: 'Rufbereitschaft (Std)',   exp: Math.round(ber.totalStd),   paid: s.rufStd,  unit: 'h' },
+    ];
+    html += '<div class="abr-result-block">';
+    html += '<h4>3. Vergleich Liste vs. Abrechnung</h4>';
+    html += '<table class="abr-table">';
+    html += '<thead><tr><th>Posten</th><th class="num">Liste</th><th class="num">Abrechnung</th><th class="num">Diff</th></tr></thead>';
+    html += '<tbody>';
+    for (const r of rows) {
+      const diff = r.paid - r.exp;
+      const cls = diff === 0 ? 'match' : 'diff';
+      html += '<tr class="' + cls + '">';
+      html += '<td>' + escapeHtml(r.label) + '</td>';
+      html += '<td class="num">' + abrFmtNum(r.exp) + ' ' + r.unit + '</td>';
+      html += '<td class="num">' + abrFmtNum(r.paid) + ' ' + r.unit + '</td>';
+      html += '<td class="num">' + (diff > 0 ? '+' : '') + abrFmtNum(diff) + '</td>';
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    if (cmp.diffs.length === 0) {
+      html += '<div class="abr-status-row" style="margin-top:8px;"><span class="abr-status-badge ok">Alle Werte stimmen ueberein</span></div>';
+    } else {
+      html += '<div class="abr-status-row" style="margin-top:8px;"><span class="abr-status-badge warn">' + cmp.diffs.length + ' Abweichung(en)</span></div>';
+    }
+    html += '</div>';
+
+    // 4) Brutto
+    html += '<div class="abr-result-block">';
+    html += '<h4>4. Brutto-Schaetzung</h4>';
+    html += '<div class="abr-hint">Basierend auf der Bereitschafts-Liste und den Tarif-Saetzen aus deiner Abrechnung: '
+         + 'LRE1 ' + abrFmtEUR(cmp.rates.LRE1) + ' &middot; '
+         + 'LRE2 ' + abrFmtEUR(cmp.rates.LRE2) + ' &middot; '
+         + 'LRE3 ' + abrFmtEUR(cmp.rates.LRE3) + ' &middot; '
+         + 'Rufbereitschaft ' + abrFmtEUR(cmp.rates.Rufbereit) + '/h'
+         + '</div>';
+    html += '<div class="abr-brutto"><span>Erwartetes Bereitschafts-Brutto (Liste):</span><span class="val">' + abrFmtEUR(cmp.estimatedBrutto) + '</span></div>';
+    html += '<div class="abr-brutto"><span>Abrechnungs-Brutto fuer ' + escapeHtml(berMonth) + ' (gesamt, alle Lohnarten):</span><span class="val">' + abrFmtEUR(s.brutto) + '</span></div>';
+    if (s.brutto > 0) {
+      const diff = s.brutto - cmp.estimatedBrutto;
+      const cls  = (diff >= -0.50 && diff <= 0.50) ? 'ok' : (diff > 0 ? 'ok' : 'diff');
+      html += '<div class="abr-brutto"><span>Differenz:</span><span class="val ' + cls + '">' + (diff > 0 ? '+' : '') + abrFmtEUR(diff) + '</span></div>';
+      html += '<div class="abr-hint">Hinweis: das Abrechnungs-Brutto enthaelt zusaetzlich Lohnanteile ausserhalb der Bereitschaft (Nachtzulage, Ueberzeitzulage, Grundgehalt-Anteile, etc.) — eine positive Differenz ist also normal.</div>';
+    }
+    html += '</div>';
+
+    // 5) Hinweise
+    const warnings = [].concat(abr.warnings || []).concat(ber.warnings || []);
+    if (warnings.length) {
+      html += '<div class="abr-result-block"><h4>Hinweise</h4><ul style="padding-left:18px;margin:0;">';
+      warnings.forEach(w => { html += '<li>' + escapeHtml(w) + '</li>'; });
+      html += '</ul></div>';
+    }
+
+    // 6) Roh-Text (collapsible)
+    html += abrRawSection(a, b);
+
+    el.innerHTML = html;
+  }
+  function abrRawSection(a, b) {
+    let html = '';
+    if (a && a.ext) {
+      const t = a.ext.full;
+      html += '<details class="abr-details"><summary>Extrahierter Roh-Text (Abrechnung) — ' + a.ext.numPages + ' Seite(n)</summary><pre>'
+           + escapeHtml(t.slice(0, 8000)) + (t.length > 8000 ? '\n[… ' + (t.length - 8000) + ' weitere Zeichen abgeschnitten …]' : '')
+           + '</pre></details>';
+    }
+    if (b && b.ext) {
+      const t = b.ext.full;
+      html += '<details class="abr-details"><summary>Extrahierter Roh-Text (Bereitschafts-Liste) — ' + b.ext.numPages + ' Seite(n)</summary><pre>'
+           + escapeHtml(t.slice(0, 8000)) + (t.length > 8000 ? '\n[… ' + (t.length - 8000) + ' weitere Zeichen abgeschnitten …]' : '')
+           + '</pre></details>';
+    }
+    return html;
   }
 
   /* ===== Service Worker (PWA Offline) ===== */

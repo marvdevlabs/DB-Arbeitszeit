@@ -7,6 +7,26 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.25.0] — 2026-05-22
+
+### Hinzugefügt
+- **Abrechnungs-Check (Phase 2 + 3)** — vollständige clientseitige PDF-Auswertung:
+  - **pdf.js v3.11.174** lazy-loaded von `cdn.jsdelivr.net`, mit SRI-Hash (sha384) für Library und Worker. Worker wird als Blob nachgeladen, gegen erwarteten SHA-384 verifiziert und nur dann via `blob:`-URL aktiviert — bleibt unter `worker-src 'self' blob:`.
+  - **Text-Extraktion** mit Y-Bucketing (2-Pixel-Drift), damit Spaltenlayouts erhalten bleiben.
+  - **Layout-Detektoren** (`looksLikeAbrechnung`, `looksLikeBereitschaft`) als erste Pflicht-Hürde.
+  - **`parseAbrechnung()`** — block-aware: erkennt mehrere `MM.YY/N`-Blöcke (Hauptmonat + Nachzahlungen), aggregiert pro Monat, extrahiert Lohnarten 243 (LRE1/2/3), 314 (Rufbereitschaft), 216 (Nachtzulage), 699 (Brutto).
+  - **Tarif-Sätze** werden direkt aus den Faktor-Spalten der Abrechnung gelesen — keine statische Tabelle nötig.
+  - **`parseBereitschaft()`** — Monat-Erkennung, LRE1/2/3-Zählung (Tagesebene + Summen-Block), Gesamtstunden.
+  - **`compareAbrBer()`** — Monat-Match, Diff-Tabelle, Brutto-Schätzung.
+- **Vergleichs-UI** mit 4 Sections (Layout / Monat / Vergleichstabelle / Brutto-Schätzung) und Status-Badges (✓ ok / ⚠ warn / ✗ err).
+- **Roh-Text-Sections** (collapsible `<details>`) für Transparenz und Debugging — User sieht genau, was der Parser ausgelesen hat.
+
+### Sicherheit
+- Worker-SRI manuell via `crypto.subtle.digest('SHA-384')` geprüft (Browser-SRI für `new Worker()` greift sonst nicht).
+- `referrerPolicy: 'no-referrer'` und `credentials: 'omit'` für alle pdf.js-Fetches.
+
+---
+
 ## [1.24.0] — 2026-05-22
 
 ### Hinzugefügt
