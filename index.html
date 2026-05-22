@@ -2463,7 +2463,7 @@
 <div id="print-area" aria-hidden="true"></div>
 
 <script>
-  const APP_VERSION = '1.25.2';
+  const APP_VERSION = '1.25.3';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -5472,48 +5472,75 @@
     return out;
   }
 
-  /* ---- Anzahl / Faktor / Betrag aus den letzten Zahlen identifizieren ----
+  /* ---- Anzahl / Faktor / Betrag aus einer Lohnart-Zeile identifizieren ----
    *
-   * Wir kennen die Spaltenreihenfolge in der Abrechnung nicht (kann
-   * "Anzahl Faktor Betrag" ODER "Faktor Anzahl Betrag" sein) und auch nicht,
-   * ob die Geldwerte mit oder ohne Komma extrahiert wurden ("78,26" ↔ "7826").
+   * Reale Beobachtungen aus DB-Abrechnungen:
    *
-   * Loesung: wir nutzen die Invariante  Anzahl × Faktor = Betrag.
-   * Aus den letzten 3 Zahlen testen wir alle 3 Rollen-Verteilungen und
-   * akzeptieren die, bei der das Produkt-Verhaeltnis stimmt (Toleranz 2%).
-   * Erkennen wir Cents-Skalierung (Faktor + Betrag ≥ 1000 und integer),
-   * normalisieren wir Faktor + Betrag durch /100 → Euro.
+   *   LRE1     243 002 7826 15652 LL LRE1
+   *   → Anzahl=2 (roh), Faktor=78,26 € (in Cent: 7826), Betrag=156,52 € (15652)
+   *     Invariante:  2 * 7826 = 15652         (Hypothese "raw", scale=1)
+   *
+   *   Rufbereitschaft 314 5300 ST 285 15105 LL N150 15105
+   *   → Anzahl=53,00 Std (in 1/100: 5300), Faktor=2,85 €/h (in Cent: 285),
+   *     Betrag=151,05 € (15105)
+   *     Invariante:  5300 * 285 = 1.510.500 = 15105 * 100  (Hyp. "scaled", *100)
+   *
+   *   Nachtzulage 216 400 ST 373 1492 GG N016
+   *   → 4 Std × 3,73 €/h = 14,92 €
+   *     Invariante:  400 * 373 = 149.200 = 1492 * 100      (Hyp. "scaled", *100)
+   *
+   * Strategie:
+   *   - Wir scannen alle moeglichen 3er-Fenster der Zeilen-Zahlen (skipt
+   *     fuehrende Lohnart-Codes wie "243" und trailing Flags wie "N150 15105").
+   *   - Pro Fenster testen wir alle 3 Rollen-Permutationen.
+   *   - Pro Permutation pruefen wir BEIDE Skalierungs-Hypothesen.
+   *   - Erste Permutation, die die Invariante erfuellt, gewinnt.
+   *
+   * Ergebnis ist immer in Euro / Stueck / Std (real-skaliert, nicht roh).
    */
   function pickAnzahlFaktorBetrag(nums) {
     if (!Array.isArray(nums) || nums.length < 3) return null;
-    const last3 = nums.slice(-3);
-    let best = null;
-    for (let i = 0; i < 3; i++) {
-      const betrag = last3[i];
-      const a = last3[(i + 1) % 3];
-      const b = last3[(i + 2) % 3];
-      if (betrag <= 0 || a <= 0 || b <= 0) continue;
-      const prod = a * b;
-      const tol = Math.max(0.10, betrag * 0.02);
-      if (Math.abs(prod - betrag) <= tol) {
-        const cnt = Math.min(a, b);
-        const fak = Math.max(a, b);
-        best = { cnt, fak, betrag };
-        break;
+    const triples = [];
+    for (let s = 0; s + 3 <= nums.length; s++) triples.push(nums.slice(s, s + 3));
+    for (const triple of triples) {
+      for (let i = 0; i < 3; i++) {
+        const c = triple[i];
+        const a = triple[(i + 1) % 3];
+        const b = triple[(i + 2) % 3];
+        if (c <= 0 || a <= 0 || b <= 0) continue;
+        const prod = a * b;
+
+        // Hypothese A: alles in derselben Einheit, Geldwerte ggf. in Cent.
+        let tolA = Math.max(1, c * 0.02);
+        if (Math.abs(prod - c) <= tolA) {
+          let cnt = Math.min(a, b);
+          let fak = Math.max(a, b);
+          let brut = c;
+          // Cents-Normalisierung: Faktor + Betrag >= 1000 + integer → /100.
+          if (fak >= 1000 && Number.isInteger(fak)
+              && Number.isInteger(brut) && brut >= 100) {
+            fak  /= 100;
+            brut /= 100;
+          }
+          if (cnt >= 1000 && Number.isInteger(cnt)) {
+            // Falls auch Anzahl in 1/100 (selten bei Hypothese A)
+            // dann lieber NICHT skalieren — Anzahl ist normal integer.
+          }
+          return { cnt, fak, betrag: brut };
+        }
+
+        // Hypothese B: alle drei in 1/100-Format. Typisch fuer Stunden-Lohnarten.
+        let tolB = Math.max(100, c * 2);
+        if (Math.abs(prod - c * 100) <= tolB) {
+          // Anzahl ist die GROESSERE der zwei Nicht-Betrag-Werte (z.B. 5300 vs 285).
+          const cnt = Math.max(a, b) / 100;
+          const fak = Math.min(a, b) / 100;
+          const brut = c / 100;
+          return { cnt, fak, betrag: brut };
+        }
       }
     }
-    if (!best) {
-      // Notbehelf: erste = Anzahl, zweite = Faktor, dritte = Betrag.
-      // Mit Cents-Detection, falls die Werte gross + integer wirken.
-      best = { cnt: last3[0], fak: last3[1], betrag: last3[2] };
-    }
-    // Cents-Skalierung erkennen + normalisieren.
-    if (best.fak >= 1000 && Number.isInteger(best.fak)
-        && Number.isInteger(best.betrag) && best.betrag >= 100) {
-      best.fak    /= 100;
-      best.betrag /= 100;
-    }
-    return best;
+    return null;
   }
 
   /* ---- Abrechnung parsen (block-aware) ---- */
@@ -5541,9 +5568,19 @@
       const mp = parseMonthFromText(text);
       if (mp) matches.push({ idx: 0, month: mp.month, year: mp.year, n: 1, raw: '(implizit)' });
     }
-    const segs = matches.map((m, i) => ({
+    // Block-Marker erscheinen i.d.R. auf jeder Seite des Abrechnungs-PDFs (z.B.
+    // "01.26/2" auf Seite 1 UND Seite 2). Wir behalten nur das ERSTE Vorkommen
+    // pro (month, year, n) — sonst summieren wir Brutto doppelt.
+    const seen = new Set();
+    const uniqueMatches = matches.filter(m => {
+      const key = m.month + '-' + m.year + '-' + m.n;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    const segs = uniqueMatches.map((m, i) => ({
       ...m,
-      text: text.slice(m.idx, i + 1 < matches.length ? matches[i + 1].idx : text.length),
+      text: text.slice(m.idx, i + 1 < uniqueMatches.length ? uniqueMatches[i + 1].idx : text.length),
     }));
     const monthsMap = new Map();
     const _locks = {};
@@ -5598,16 +5635,19 @@
           if (r) { block.nacht.std = r.cnt; block.nacht.fak = r.fak; block.nacht.betrag = r.betrag; }
           continue;
         }
-        // Brutto (Lohnart 699 oder Label)
-        if (/\b699\b/.test(line) || /\bBrutto(?:bezuege|verdienst|lohn)?\b/i.test(line)) {
+        // Brutto NUR ueber Lohnart 699 (Summe Bruttobetrag). Wir matchen NICHT
+        // auf "Brutto" als Wort, weil das z.B. auch "KV-Brutto", "Bruttoverz."
+        // oder "Gesamtbrutto" trifft und Falsch-Werte zieht.
+        // Format der Zeile typisch:  "Summe Bruttobetrag 699 61329 * 402481"
+        // → 61329 = Monats-Brutto (in Cent), 402481 = YTD-Brutto. Wir wollen den
+        //   MONATLICHEN Wert, also die ERSTE Zahl direkt nach dem Lohnart-Code.
+        if (/\b699\b/.test(line)) {
           const nums = parseLineNumbers(effectiveLine(lines, li));
-          if (nums.length >= 1) {
-            // Brutto: nimm den groessten der letzten 3 Werte (Total > Faktor/Anzahl).
-            const cand = nums.slice(-3);
-            let big = Math.max.apply(null, cand);
-            // Cents-Skalierung: wenn Integer + ungewoehnlich gross → /100
-            if (big > 10000 && Number.isInteger(big)) big = big / 100;
-            block.brutto = Math.max(block.brutto, big);
+          const i699 = nums.indexOf(699);
+          let brut = (i699 >= 0 && nums[i699 + 1] !== undefined) ? nums[i699 + 1] : nums[0];
+          if (brut > 10000 && Number.isInteger(brut)) brut = brut / 100;
+          if (Number.isFinite(brut) && brut > 0) {
+            block.brutto = Math.max(block.brutto, brut);
           }
         }
       }
@@ -5642,65 +5682,90 @@
     return result;
   }
 
-  /* ---- Bereitschafts-Liste parsen ---- */
+  /* ---- Bereitschafts-Liste parsen ----
+   *
+   * Realer Aufbau (DB eTime/Bereitschaftsliste):
+   *
+   *   Summe Monat 01.26:
+   *     Gesamtsumme Rufbereitschaft (Std.Min):        60.00
+   *     Gesamtsumme Arbeitseinsätze (ohne Anr):        7.07
+   *     Zulagenberechtigende Rufbereitschaftszeit:    52.53
+   *     Gesamtsumme LRE1 (Anzahl):                     2
+   *     Gesamtsumme LRE2 (Anzahl):                     1
+   *     Gesamtsumme LRE3 (Anzahl):                     2
+   *
+   * Achtung: Format ist hh.mm (60.00 = 60h 00m, 52.53 = 52h 53m),
+   * NICHT dezimal. Wir konvertieren zu Dezimalstunden.
+   *
+   * Die "Zulagenberechtigende Rufbereitschaftszeit" ist DAS Vergleichs-
+   * kriterium fuer die Abrechnung (Rufbereitschafts-Stunden in der
+   * Abrechnung werden auf die zulagenberechtigte Zeit gerundet).
+   */
+  function parseHourMinFormat(s) {
+    // "52.53" → 52h53m → 52 + 53/60 = 52.883 Dezimalstunden.
+    // "60.00" → 60h00m → 60.0
+    // "12,30" → 12h30m → 12.5
+    // Falls die Minuten-Stelle >=60 ist, ist's wohl doch dezimal → return as-is.
+    const v = parseFloat(String(s).replace(',', '.'));
+    if (!Number.isFinite(v)) return 0;
+    const h = Math.floor(v);
+    const m = Math.round((v - h) * 100);
+    if (m >= 60) return v;
+    return h + m / 60;
+  }
   function parseBereitschaft(text) {
     const result = {
       type: 'bereitschaft',
       month: null, year: null,
       lre1Cnt: 0, lre2Cnt: 0, lre3Cnt: 0,
       totalStd: 0,
+      zulageBerStd: 0,
+      einsaetzeStd: 0,
       warnings: [],
     };
-    const mp = parseMonthFromText(text);
-    if (mp) { result.month = mp.month; result.year = mp.year; }
-    const lines = text.split('\n');
-    let inSummary = false;
-    let summaryLre1 = 0, summaryLre2 = 0, summaryLre3 = 0, summaryStd = 0;
-    for (const line of lines) {
-      if (/(^|\s)(Summe|Gesamt|Auswertung|Statistik|Monatssumme|Gesamtsumme)/i.test(line)) {
-        inSummary = true;
-      }
-      if (inSummary) {
-        // Beide Reihenfolgen erlauben:
-        //   "2 LRE1, 1 LRE2"  (Anzahl links)
-        //   "LRE 1: 2, LRE 2: 1"  (Anzahl rechts)
-        const reLeft  = /(\d+)\s*[xX]?\s*LRE\s*([123])\b/gi;
-        const reRight = /LRE\s*([123])\b\s*[:.\-]?\s*(\d+)/gi;
-        let sm;
-        while ((sm = reLeft.exec(line)) !== null) {
-          const cnt = parseInt(sm[1], 10), cls = parseInt(sm[2], 10);
-          if (cls === 1) summaryLre1 = Math.max(summaryLre1, cnt);
-          if (cls === 2) summaryLre2 = Math.max(summaryLre2, cnt);
-          if (cls === 3) summaryLre3 = Math.max(summaryLre3, cnt);
-        }
-        while ((sm = reRight.exec(line)) !== null) {
-          const cls = parseInt(sm[1], 10), cnt = parseInt(sm[2], 10);
-          if (cls === 1) summaryLre1 = Math.max(summaryLre1, cnt);
-          if (cls === 2) summaryLre2 = Math.max(summaryLre2, cnt);
-          if (cls === 3) summaryLre3 = Math.max(summaryLre3, cnt);
-        }
-        const sh = line.match(/(\d{1,4}[,.]\d{2})\s*(?:Std|Stunden|h\b)/i);
-        if (sh) {
-          const v = parseFloat(sh[1].replace(',', '.'));
-          if (v > 0) summaryStd = Math.max(summaryStd, v);
-        }
-        continue;
-      }
-      // Pro-Tag-Zeile zaehlen
-      if (/\bLRE\s*1\b/i.test(line)) result.lre1Cnt++;
-      if (/\bLRE\s*2\b/i.test(line)) result.lre2Cnt++;
-      if (/\bLRE\s*3\b/i.test(line)) result.lre3Cnt++;
+    // 1) Monat — bevorzugt aus "Summe Monat MM.YY:" (eindeutig).
+    const monthM = text.match(/Summe\s+Monat\s+(0[1-9]|1[0-2])\.(\d{2})/i);
+    if (monthM) {
+      result.month = +monthM[1];
+      result.year  = 2000 + +monthM[2];
+    } else {
+      const mp = parseMonthFromText(text);
+      if (mp) { result.month = mp.month; result.year = mp.year; }
     }
-    // Wenn Summen-Block welche fand, bevorzugen — sonst per-Tag-Zaehlung behalten.
-    if (summaryLre1) result.lre1Cnt = summaryLre1;
-    if (summaryLre2) result.lre2Cnt = summaryLre2;
-    if (summaryLre3) result.lre3Cnt = summaryLre3;
-    if (summaryStd)  result.totalStd = summaryStd;
+    // 2) Hochwertige Summen direkt aus dem strukturierten Summen-Block.
+    const grabVal = (re) => {
+      const m = text.match(re);
+      return m ? m[1] : null;
+    };
+    const sGesRuf  = grabVal(/Gesamtsumme\s+Rufbereitschaft[^\d-]{0,40}(\d+[.,]\d{1,2})/i);
+    const sEins    = grabVal(/Gesamtsumme\s+Arbeitseins(?:ä|ae)tze[^\d-]{0,40}(\d+[.,]\d{1,2})/i);
+    const sZulage  = grabVal(/Zulagenberechtigende\s+Rufbereitschaftszeit[^\d-]{0,40}(\d+[.,]\d{1,2})/i);
+    const sLre1    = grabVal(/Gesamtsumme\s+LRE\s*1[^\d-]{0,40}(\d+)/i);
+    const sLre2    = grabVal(/Gesamtsumme\s+LRE\s*2[^\d-]{0,40}(\d+)/i);
+    const sLre3    = grabVal(/Gesamtsumme\s+LRE\s*3[^\d-]{0,40}(\d+)/i);
+    if (sGesRuf) result.totalStd     = parseHourMinFormat(sGesRuf);
+    if (sEins)   result.einsaetzeStd = parseHourMinFormat(sEins);
+    if (sZulage) result.zulageBerStd = parseHourMinFormat(sZulage);
+    if (sLre1) result.lre1Cnt = parseInt(sLre1, 10) || 0;
+    if (sLre2) result.lre2Cnt = parseInt(sLre2, 10) || 0;
+    if (sLre3) result.lre3Cnt = parseInt(sLre3, 10) || 0;
+
+    // 3) Fallback: wenn Summen-Block nicht gefunden, pro-Tag zaehlen.
+    if (!sLre1 && !sLre2 && !sLre3) {
+      const lines = text.split('\n');
+      for (const line of lines) {
+        if (/\bLRE\s*1\b/i.test(line)) result.lre1Cnt++;
+        if (/\bLRE\s*2\b/i.test(line)) result.lre2Cnt++;
+        if (/\bLRE\s*3\b/i.test(line)) result.lre3Cnt++;
+      }
+    }
     if (!result.totalStd) {
+      // Letzter Notbehelf: Tagesstunden aufsummieren.
+      const lines = text.split('\n');
       let sum = 0;
       for (const line of lines) {
         const m = line.match(/(\d{1,3}[,.]\d{2})\s*(?:Std|h\b)/i);
-        if (m) sum += parseFloat(m[1].replace(',', '.'));
+        if (m) sum += parseHourMinFormat(m[1]);
       }
       if (sum > 0) result.totalStd = sum;
     }
@@ -5713,6 +5778,12 @@
   function compareAbrBer(abr, ber) {
     const targetKey = String(ber.month).padStart(2, '0') + '.' + String(ber.year).slice(-2);
     const monthEntry = abr.months.find(m => m.monthKey === targetKey);
+    // Fuer den Rufbereitschafts-Vergleich nehmen wir die zulagenberechtigte Zeit
+    // (Liste: "Zulagenberechtigende Rufbereitschaftszeit"). Das ist die Zeit,
+    // die der DB tatsaechlich verguetet (Gesamtzeit minus Arbeitseinsaetze).
+    // Fallback: Gesamt-Stunden, falls Zulage-Zeit nicht extrahiert wurde.
+    const refStd = ber.zulageBerStd > 0 ? ber.zulageBerStd : ber.totalStd;
+    const refStdRounded = Math.round(refStd);
     const r = {
       monthMatch: !!monthEntry,
       targetKey,
@@ -5721,6 +5792,8 @@
       diffs: [],
       rates: abr.rates,
       estimatedBrutto: null,
+      refStdSource: ber.zulageBerStd > 0 ? 'zulageberechtigt' : 'gesamt',
+      refStdRounded,
     };
     if (!monthEntry) return r;
     const s = monthEntry.sum;
@@ -5728,7 +5801,7 @@
       lre1Cnt: ber.lre1Cnt,
       lre2Cnt: ber.lre2Cnt,
       lre3Cnt: ber.lre3Cnt,
-      rufStd:  Math.round(ber.totalStd),  // Abrechnung rundet auf volle Stunden
+      rufStd:  refStdRounded,
     };
     ['lre1Cnt','lre2Cnt','lre3Cnt','rufStd'].forEach(k => {
       if (s[k] !== exp[k]) r.diffs.push({ field: k, expected: exp[k], paid: s[k] });
@@ -5738,7 +5811,7 @@
       ber.lre1Cnt * rates.LRE1 +
       ber.lre2Cnt * rates.LRE2 +
       ber.lre3Cnt * rates.LRE3 +
-      Math.round(ber.totalStd) * rates.Rufbereit
+      refStdRounded * rates.Rufbereit
     );
     return r;
   }
@@ -5934,11 +6007,15 @@
 
     // 3) Vergleichstabelle
     const s = cmp.abrMonth.sum;
+    const refStd = cmp.refStdRounded;
+    const refStdLabel = cmp.refStdSource === 'zulageberechtigt'
+      ? 'Rufbereitschaft (Std, zulageberechtigt)'
+      : 'Rufbereitschaft (Std, gesamt)';
     const rows = [
-      { label: 'LRE 1 (Ersteinsatz)',     exp: ber.lre1Cnt,                paid: s.lre1Cnt, unit: 'x' },
-      { label: 'LRE 2 (Folge-Einsatz)',   exp: ber.lre2Cnt,                paid: s.lre2Cnt, unit: 'x' },
-      { label: 'LRE 3 (telefonisch)',     exp: ber.lre3Cnt,                paid: s.lre3Cnt, unit: 'x' },
-      { label: 'Rufbereitschaft (Std)',   exp: Math.round(ber.totalStd),   paid: s.rufStd,  unit: 'h' },
+      { label: 'LRE 1 (Ersteinsatz)',   exp: ber.lre1Cnt, paid: s.lre1Cnt, unit: 'x' },
+      { label: 'LRE 2 (Folge-Einsatz)', exp: ber.lre2Cnt, paid: s.lre2Cnt, unit: 'x' },
+      { label: 'LRE 3 (telefonisch)',   exp: ber.lre3Cnt, paid: s.lre3Cnt, unit: 'x' },
+      { label: refStdLabel,             exp: refStd,      paid: s.rufStd,  unit: 'h' },
     ];
     html += '<div class="abr-result-block">';
     html += '<h4>3. Vergleich Liste vs. Abrechnung</h4>';
@@ -5960,6 +6037,11 @@
       html += '<div class="abr-status-row" style="margin-top:8px;"><span class="abr-status-badge ok">Alle Werte stimmen ueberein</span></div>';
     } else {
       html += '<div class="abr-status-row" style="margin-top:8px;"><span class="abr-status-badge warn">' + cmp.diffs.length + ' Abweichung(en)</span></div>';
+    }
+    if (cmp.refStdSource === 'zulageberechtigt' && ber.totalStd > 0) {
+      html += '<div class="abr-hint">Vergleich nutzt die <strong>zulageberechtigte Rufbereitschaftszeit</strong> ('
+           + abrFmtNum(ber.zulageBerStd, 2) + ' = ' + refStd + ' h gerundet) — das ist die Zeit, die der DB tatsächlich verguetet. '
+           + 'Gesamt-Rufbereitschaft laut Liste: ' + abrFmtNum(ber.totalStd, 2) + ' Std, davon Arbeitseinsaetze ' + abrFmtNum(ber.einsaetzeStd, 2) + ' Std.</div>';
     }
     html += '</div>';
 

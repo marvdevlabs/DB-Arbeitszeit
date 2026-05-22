@@ -7,6 +7,23 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.25.3] — 2026-05-22
+
+### Behoben (Abrechnungs-Check)
+- **Stunden-Lohnarten (Rufbereitschaft 314, Nachtzulage 216) komplett falsch**: das Layout der Zeilen ist  `Bezeichnung Lohnart Anzahl ST Faktor Betrag Flags` — und die DB skaliert dort **alle drei** Zahlen mit /100 (z.B. `5300 ST 285 15105` → 53,00 Std × 2,85 €/h = 151,05 €). Vorher: 15105 wurde als Stunden interpretiert und 150 (aus dem Flag „N150") als Faktor.
+- **Neues `pickAnzahlFaktorBetrag()`** testet jetzt **zwei Skalierungs-Hypothesen** (alle gleich vs. alle in 1/100) gegen die Invariante  Anzahl × Faktor = Betrag — Spaltenreihenfolge und Cent-Skalierung werden automatisch erkannt.
+- **Sliding-Window 3er-Triples** statt nur `slice(-3)` — überspringt führende Lohnart-Codes und trailing-Flags (`N150 15105`).
+- **Block-Marker doppelt gezählt**: `01.26/2` erscheint auf jeder Seite eines Abrechnungs-PDFs (Seitenkopf-Wiederholung) — meine Segmentierung hat das als zwei separate Blöcke behandelt und Brutto doppelt aufsummiert (4024,81 + 598,37 = 4623,18 statt 4024,81). **Fix**: Dedupe nach `(monat, jahr, n)`-Schlüssel, nur erstes Vorkommen behalten.
+- **Brutto = YTD statt Monatsbrutto**: Zeile `Summe Bruttobetrag 699 61329 * 402481` hat ZWEI Werte — 61329 (Monat in Cent = 613,29 €) und 402481 (Jahr-bis-dato = 4024,81 €). Vorher: Max → YTD. **Fix**: erste Zahl direkt nach Lohnart-Code 699 nehmen.
+- **Brutto-Regex zu großzügig**: `\bBrutto\b` matched auch „KV-Brutto", „Bruttoverz." etc. **Fix**: nur noch `\b699\b` als Trigger.
+
+### Hinzugefügt
+- **Bereitschafts-Liste**: hochwertiger Summen-Block direkt geparst — `Gesamtsumme LRE1 (Anzahl): 2`, `Zulagenberechtigende Rufbereitschaftszeit: 52.53` etc. Keine Schätzerei mehr.
+- **hh.mm-Format-Parser** (`parseHourMinFormat`): „52.53" = 52h 53m → 52,883 Dezimalstunden (vorher als 52,53 dezimal interpretiert).
+- **Zulageberechtigte Rufbereitschaftszeit** ist jetzt das **Vergleichs-Kriterium** statt der Gesamt-Rufbereitschaft — das ist die Zeit, die der DB tatsächlich vergütet (Gesamt − Arbeitseinsätze). Ein zusätzlicher Hinweis erklärt unter der Tabelle, welcher Wert verwendet wird.
+
+---
+
 ## [1.25.2] — 2026-05-22
 
 ### Behoben
