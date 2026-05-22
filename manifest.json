@@ -1,7 +1,7 @@
 {
-  "name": "Arbeitszeit-Rechner",
-  "short_name": "Arbeitszeit",
-  "description": "Persönliches Hilfsmittel zum Erfassen der täglichen Arbeitszeit in AE. Kein offizielles DB-Tool.",
+  "name": "DB Toolbox",
+  "short_name": "DB Toolbox",
+  "description": "Toolbox für DB-Techniker: Tageserfassung (AE-Werte) und Abrechnungs-Check (Bereitschaft / LRE / Netto). Kein offizielles DB-Tool.",
   "lang": "de",
   "id": "/arbeitszeit/",
   "start_url": "/arbeitszeit/",

@@ -7,6 +7,19 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.31.0] — 2026-05-22
+
+### Geändert
+- **App-Name & Branding**: Die App heißt jetzt **„DB Toolbox"** — passt zur Multi-Tool-Architektur. Header, `<title>`, PWA-Manifest (`name`/`short_name`), Apple-Touch-Icon-Title und About-Modal angepasst.
+- **README komplett neu** — erzählt die Toolbox-Story mit beiden Werkzeugen (Tageserfassung + Abrechnungs-Check) und kompakter Architektur-Übersicht.
+- **Persönliche Daten sind jetzt Pflicht** für die Geld-Prüfung: Klick auf „Weiter zur Geld-Prüfung →" prüft, ob Bundesland + Grundgehalt gesetzt sind. Wenn nicht: Personal-Daten-Card öffnet automatisch + scrollt in den Viewport + zeigt einen rot umrandeten Hinweis. Nach Ausfüllen springt das Tool **automatisch** in die Geld-Ansicht (kein zweiter Klick nötig).
+
+### Behoben (Netto-Berechnung)
+- **Auszahlungsbetrag stimmt jetzt** — der Wert wird primär aus **Lohnart 977 („Überweisung")** der Abrechnung gelesen. Die theoretische Netto-Berechnung war systematisch ungenau (~5 % Abweichung), weil Vorsorgepauschale, Firmenrad-Bruttoverzicht, persönliche Bezüge und übertragene Nachzahlungen aus Vormonaten nicht modelliert sind. Der echte Überweisungs-Wert aus der Abrechnung ist verbindlich und wird groß angezeigt.
+- Die theoretische Netto-Berechnung bleibt als **„geschätztes Netto ohne Bereitschaft"**-Vergleichswert sichtbar — damit du grob siehst, wie viel davon das „On-Top"-Plus war.
+
+---
+
 ## [1.30.0] — 2026-05-22
 
 ### Geändert (Layout vereinfacht)

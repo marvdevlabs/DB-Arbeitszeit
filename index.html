@@ -7,18 +7,18 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Arbeitszeit">
+<meta name="apple-mobile-web-app-title" content="DB Toolbox">
 <meta name="theme-color" content="#2D3142" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#2D3142" media="(prefers-color-scheme: dark)">
 <meta name="format-detection" content="telephone=no">
-<meta name="description" content="Persönliches Arbeitszeit-Hilfsmittel zum Erfassen von AE-Werten. Open-Source-Projekt von @marvdevlabs. Kein offizielles Tool der Deutschen Bahn AG.">
+<meta name="description" content="Persönliche Toolbox für DB-Techniker: Tageserfassung (AE-Werte) und Abrechnungs-Check (Bereitschaft / LRE / Netto). Alles offline, Open-Source-Projekt von @marvdevlabs. Kein offizielles Tool der Deutschen Bahn AG.">
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer-when-downgrade">
 <meta name="author" content="marvdevlabs">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%232D3142'/%3E%3Crect x='44' y='11' width='12' height='6' rx='1.5' fill='%23fff'/%3E%3Crect x='46' y='5' width='8' height='7' rx='1.5' fill='%23fff'/%3E%3Ccircle cx='50' cy='58' r='28' fill='none' stroke='%23fff' stroke-width='6'/%3E%3Cline x1='50' y1='58' x2='50' y2='40' stroke='%23fff' stroke-width='5' stroke-linecap='round'/%3E%3Cline x1='50' y1='58' x2='64' y2='58' stroke='%23fff' stroke-width='5' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='58' r='3.5' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232D3142'/%3E%3Crect x='44' y='11' width='12' height='6' rx='1.5' fill='%23fff'/%3E%3Crect x='46' y='5' width='8' height='7' rx='1.5' fill='%23fff'/%3E%3Ccircle cx='50' cy='58' r='28' fill='none' stroke='%23fff' stroke-width='6'/%3E%3Cline x1='50' y1='58' x2='50' y2='40' stroke='%23fff' stroke-width='5' stroke-linecap='round'/%3E%3Cline x1='50' y1='58' x2='64' y2='58' stroke='%23fff' stroke-width='5' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='58' r='3.5' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="manifest" href="/arbeitszeit/manifest.json">
-<title>Arbeitszeit-Rechner</title>
+<title>DB Toolbox</title>
 <style>
   :root {
     --db-red: #EC0016;
@@ -2067,7 +2067,7 @@
 <div class="container">
   <header>
     <div>
-      <h1>Arbeitszeit-Rechner</h1>
+      <h1>DB Toolbox</h1>
       <div class="sub" id="header-sub"></div>
     </div>
     <div class="header-right">
@@ -2499,8 +2499,9 @@
   <div class="modal-card modal-about-card">
     <div class="modal-title">Über</div>
     <div class="modal-body">
-      <p><strong>Arbeitszeit-Rechner</strong> <span class="about-version-tag">Version <span id="aboutVersion">—</span></span></p>
-      <p style="margin-top:8px;">Persönliches Open-Source-Projekt zur Erfassung der täglichen Arbeitszeit in AE (Arbeitseinheiten).</p>
+      <p><strong>DB Toolbox</strong> <span class="about-version-tag">Version <span id="aboutVersion">—</span></span></p>
+      <p style="margin-top:8px;">Persönliches Open-Source-Projekt mit zwei Werkzeugen für DB-Techniker:</p>
+      <p style="margin-top:4px;">• <strong>Tageserfassung</strong> — AE-Werte, Splits, Reise- &amp; Rückzeit<br>• <strong>Abrechnungs-Check</strong> — Bereitschaft + LRE-Vergleich + Netto-Anzeige</p>
 
       <div class="about-section-title">Entwickelt von</div>
       <p>Marvin Duhn · <a href="https://github.com/marvdevlabs" target="_blank" rel="noopener">@marvdevlabs</a></p>
@@ -2593,7 +2594,7 @@
 <div id="print-area" aria-hidden="true"></div>
 
 <script>
-  const APP_VERSION = '1.30.0';
+  const APP_VERSION = '1.31.0';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -5416,6 +5417,7 @@
     bereitschaft:  null,
     comparing:     false,
     showMoney:     false,  // false = nur LRE-Check, true = inkl. Geld-Pruefung
+    pendingMoney:  false,  // true wenn user "Weiter" geklickt hat aber Personal-Daten fehlten
   };
 
   // Default-Tarif-Saetze (2025/2026). Werden, sobald moeglich, durch die
@@ -5748,6 +5750,7 @@
         lst: 0, kist: 0,
         kv: 0, rv: 0, av: 0, pv: 0,
         netto: 0,
+        ueberweisung: 0,   // Lohnart 977 — tatsaechlich aufs Konto ueberwiesen
       };
       // Helfer fuer Cents-Normalisierung von Geldwerten (Faktor + Betrag).
       const norm100 = (v) => (v >= 1000 ? v / 100 : v);
@@ -5866,6 +5869,16 @@
           if (val > 1000 && Number.isInteger(val)) val = val / 100;
           if (Number.isFinite(val) && val > 0) block.netto = Math.max(block.netto, val);
         }
+        // Überweisung — Lohnart 977 = tatsaechlich aufs Konto ueberwiesener
+        // Auszahlungsbetrag (inkl. uebertragener Nachzahlungen).
+        //   Überweisung 977 301880 *  → 3018,80 €
+        else if (/\b977\b/.test(line) && /(?:Überweisung|Ueberweisung|Auszahlung)/i.test(line)) {
+          const nums = parseLineNumbers(line);
+          const idx = nums.indexOf(977);
+          let val = idx >= 0 && nums[idx + 1] !== undefined ? nums[idx + 1] : nums[0];
+          if (val > 1000 && Number.isInteger(val)) val = val / 100;
+          if (Number.isFinite(val) && val > 0) block.ueberweisung = Math.max(block.ueberweisung, val);
+        }
       }
       const key = String(seg.month).padStart(2, '0') + '.' + String(seg.year).slice(-2);
       if (!monthsMap.has(key)) {
@@ -5892,6 +5905,7 @@
         lst: 0, kist: 0,
         kv: 0, rv: 0, av: 0, pv: 0,
         netto: 0,
+        ueberweisung: 0,
       };
       monthObj.blocks.forEach(b => {
         sum.lre1Cnt    += b.lre1.cnt;
@@ -5912,6 +5926,7 @@
         sum.av         += b.av;
         sum.pv         += b.pv;
         sum.netto      += b.netto;
+        sum.ueberweisung = Math.max(sum.ueberweisung, b.ueberweisung);  // höchster Wert eines Blocks gewinnt (Auszahlung ist nicht summierbar)
       });
       sum.bereitschaftsBrutto = abrRound2(
         sum.lre1Betrag + sum.lre2Betrag + sum.lre3Betrag +
@@ -6125,6 +6140,12 @@
     abrPersonal.stufe           = document.getElementById('abrStufe').value || '';
     saveAbrPersonal();
     updateAbrPersonalSummary();
+    // Wenn user vorher "Weiter zur Geld-Pruefung" geklickt hatte (gate getrippt)
+    // UND jetzt complete ist → automatisch in den Money-View springen.
+    if (abrState.pendingMoney && abrPersonalIsComplete() && abrPersonalHasGrundgehalt()) {
+      abrShowMoney();
+      return;
+    }
     // Re-render — wenn schon geparst, einfach nochmal rendern; sonst idle.
     if (abrState.abrechnung && abrState.bereitschaft && abrState.abrechnung.parsed && abrState.bereitschaft.parsed) {
       abrState.comparing = false;
@@ -6399,6 +6420,7 @@
     abrState.bereitschaft = null;
     abrState.comparing = false;
     abrState.showMoney = false;
+    abrState.pendingMoney = false;
     ['abrechnung', 'bereitschaft'].forEach(k => {
       const slot = abrSlotEl(k);
       const stat = abrStatusEl(k);
@@ -6636,22 +6658,44 @@
       html += '</div>';
     }
 
-    // 5) FINAL: Auszahlungsbetrag mit Bereitschaft
-    if (abrPersonalIsComplete() && abrPersonalHasGrundgehalt() && s.bereitschaftsBrutto > 0) {
+    // 5) FINAL: Auszahlungsbetrag — bevorzugt aus Lohnart 977, sonst Schätzung
+    if (s.ueberweisung > 0) {
+      html += '<div class="abr-result-block" style="border:1.5px solid #2EA043;background:rgba(46,160,67,0.06);">';
+      html += '<h4 style="color:#2EA043;">💰 Dein Auszahlungsbetrag</h4>';
+      html += '<div class="abr-hint">Direkt aus deiner Abrechnung (Lohnart 977 „Überweisung") — das ist der Betrag, der wirklich aufs Konto kommt. Enthält ggf. übertragene Nachzahlungen aus Vormonaten.</div>';
+      html += '<div class="abr-brutto" style="margin-top:12px;align-items:center;">';
+      html += '<span style="font-weight:700;font-size:14px;">Tatsächlich überwiesen:</span>';
+      html += '<span class="val ok" style="font-size:26px;">' + abrFmtEUR(s.ueberweisung) + '</span>';
+      html += '</div>';
+      if (abrPersonalIsComplete() && abrPersonalHasGrundgehalt()) {
+        const gg    = abrPersonal.grundgehalt;
+        const ohneB = abrCalcNetto(gg, abrPersonal);
+        const delta = abrRound2(s.ueberweisung - ohneB.netto);
+        html += '<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);">';
+        html += '<div class="abr-hint">Zum Einordnen — geschätztes Monats-Netto OHNE Bereitschaft (basierend auf deinem Grundgehalt + Steuer-/SV-Konfig):</div>';
+        html += '<div class="abr-brutto"><span>Netto ohne Bereitschaft (geschätzt):</span><span class="val">' + abrFmtEUR(ohneB.netto) + '</span></div>';
+        if (delta > 0) {
+          html += '<div class="abr-brutto"><span>≈ Differenz (Bereitschaft + ggf. Nachzahlung):</span><span class="val ok">+' + abrFmtEUR(delta) + '</span></div>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    } else if (abrPersonalIsComplete() && abrPersonalHasGrundgehalt() && s.bereitschaftsBrutto > 0) {
+      // Fallback: keine Überweisung in Abrechnung, also Schätzung über Grundgehalt + Bereitschaft.
       const gg     = abrPersonal.grundgehalt;
       const ohneB  = abrCalcNetto(gg, abrPersonal);
       const mitB   = abrCalcNetto(gg + s.bereitschaftsBrutto, abrPersonal);
       const delta  = abrRound2(mitB.netto - ohneB.netto);
       html += '<div class="abr-result-block" style="border:1.5px solid #2EA043;background:rgba(46,160,67,0.06);">';
-      html += '<h4 style="color:#2EA043;">💰 Dein Auszahlungsbetrag mit Bereitschaft</h4>';
-      html += '<div class="abr-hint">Berechnet aus deinem Grundgehalt (' + abrFmtEUR(gg) + ') + Bereitschafts-Brutto (' + abrFmtEUR(s.bereitschaftsBrutto) + ') unter Berücksichtigung deiner persönlichen Steuer- und SV-Konfig.</div>';
+      html += '<h4 style="color:#2EA043;">💰 Geschätzter Auszahlungsbetrag mit Bereitschaft</h4>';
+      html += '<div class="abr-hint">Schätzung aus Grundgehalt (' + abrFmtEUR(gg) + ') + Bereitschafts-Brutto (' + abrFmtEUR(s.bereitschaftsBrutto) + ') unter Berücksichtigung deiner Personal-Konfig. Lohnart 977 nicht in der Abrechnung gefunden.</div>';
       html += '<div class="abr-brutto" style="margin-top:10px;"><span>Monats-Netto ohne Bereitschaft:</span><span class="val">' + abrFmtEUR(ohneB.netto) + '</span></div>';
       html += '<div class="abr-brutto"><span>Monats-Netto MIT Bereitschaft:</span><span class="val ok" style="font-size:22px;">' + abrFmtEUR(mitB.netto) + '</span></div>';
       html += '<div class="abr-brutto" style="border-top:1px dashed var(--border);padding-top:8px;margin-top:6px;"><span>Davon Bereitschaft (netto on top):</span><span class="val ok">+' + abrFmtEUR(delta) + '</span></div>';
-      html += '<div class="abr-hint" style="margin-top:8px;font-style:italic;">⚠️ Schätzung — verbindlich ist nur die Abrechnung deines Arbeitgebers. Vorsorgepauschale stark vereinfacht.</div>';
+      html += '<div class="abr-hint" style="margin-top:8px;font-style:italic;">⚠️ Schätzung — verbindlich ist nur die Abrechnung deines Arbeitgebers.</div>';
       html += '</div>';
-    } else if (!abrPersonalIsComplete() || !abrPersonalHasGrundgehalt()) {
-      html += '<div class="abr-result-block"><div class="abr-hint">💡 Trag oben in <strong>Persönliche Daten</strong> dein Grundgehalt + Steuerklasse/Bundesland ein, dann zeigt dir das Tool hier den Auszahlungsbetrag mit Bereitschaft an.</div></div>';
+    } else {
+      html += '<div class="abr-result-block"><div class="abr-hint">💡 Personal-Daten + Grundgehalt fehlen — bitte oben ausfüllen.</div></div>';
     }
 
     // 6) Hinweise
@@ -6674,7 +6718,40 @@
     }
   }
   // Schritt 2 (Geld-Pruefung) freischalten.
+  // Vorab-Check: Personal-Daten + Grundgehalt sind PFLICHT. Ohne diese
+  // hat die Geld-Pruefung keinen Sinn (keine Netto-Schaetzung moeglich).
   function abrShowMoney() {
+    if (!abrPersonalIsComplete() || !abrPersonalHasGrundgehalt()) {
+      abrState.pendingMoney = true;
+      // Personal-Daten-Card aufklappen + hinscrollen
+      const card = document.getElementById('abrPersonalCard');
+      if (card) {
+        card.open = true;
+        setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+      }
+      const missingGG = !abrPersonalHasGrundgehalt();
+      const missingBL = !abrPersonalIsComplete();
+      const what = (missingGG && missingBL) ? 'dein Bundesland und dein Grundgehalt'
+                   : missingGG               ? 'dein monatliches Grundgehalt'
+                   :                          'dein Bundesland';
+      // Highlight im Result-Bereich
+      const el = document.getElementById('abrResult');
+      if (el) {
+        el.classList.remove('empty');
+        el.innerHTML =
+          '<div class="abr-result-block" style="border:1.5px solid var(--db-red);background:rgba(236,0,22,0.06);">' +
+            '<div style="display:flex;align-items:flex-start;gap:10px;">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="var(--db-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;flex:0 0 22px;margin-top:1px;"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>' +
+              '<div>' +
+                '<div style="font-weight:700;color:var(--text-strong);font-size:14px;">Bitte erst Persönliche Daten ausfüllen</div>' +
+                '<div style="font-size:12.5px;color:var(--text-secondary);margin-top:4px;">Für die Geld-Prüfung brauchen wir ' + what + '. Die Card oben ist gerade aufgeklappt — trag die Daten ein und klick dann „Neu berechnen".</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+      }
+      return;
+    }
+    abrState.pendingMoney = false;
     abrState.showMoney = true;
     if (abrState.abrechnung && abrState.bereitschaft && abrState.abrechnung.parsed && abrState.bereitschaft.parsed) {
       abrState.comparing = false;
