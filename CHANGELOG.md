@@ -7,6 +7,20 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.25.4] — 2026-05-22
+
+### Behoben (Abrechnungs-Check)
+- **LRE2 wurde fälschlich als „2x" erkannt** statt 1x: die generische Heuristik (Multiplikations-Invariante) hat unter Umständen die falsche Permutation gewählt, und der `effectiveLine`-Fallback konnte Nachbarzeilen mit reinziehen. **Fix**: deterministische **exakte Regex** für die Standard-DB-Lohnart-Zeilen — keine Heuristik mehr, wenn der Standard-Form passt:
+  - LRE: `\bLRE\s*([123])\s+243\s+(\d+)\s+(\d+)\s+(\d+)\b`
+  - Rufbereitschaft: `Rufbereit\w*\s+314\s+(\d+)\s+ST\s+(\d+)\s+(\d+)\b`
+  - Nachtzulage: `Nachtzulage\s+216\s+(\d+)\s+ST\s+(\d+)\s+(\d+)\b`
+- Die generische `pickAnzahlFaktorBetrag()`-Heuristik bleibt als **Fallback** für Sonder-Layouts erhalten, springt aber nur ein, wenn die Exakt-Regex nichts gefunden hat (`block.X.cnt === 0`).
+
+### Hinzugefügt
+- **Debug-Section „Erkannte Lohnarten pro Block"** (ausklappbar) — zeigt für jeden gefundenen Abrechnungs-Block die rohen Werte (Anzahl, Faktor, Betrag, Brutto) pro Lohnart. Sehr nützlich zur Diagnose, wenn die Vergleichstabelle nicht stimmt.
+
+---
+
 ## [1.25.3] — 2026-05-22
 
 ### Behoben (Abrechnungs-Check)

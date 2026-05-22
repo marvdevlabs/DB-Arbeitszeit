@@ -2463,7 +2463,7 @@
 <div id="print-area" aria-hidden="true"></div>
 
 <script>
-  const APP_VERSION = '1.25.3';
+  const APP_VERSION = '1.25.4';
   const FIX_ABZUG_MIN = 60;      // Morgen 30 + Nachmittag 30 (Standardfall)
   const SOLL_MIN = 468;          // 7h 48min
   const AE48_MIN = 480;          // 48 AE = 480 min = 8h
@@ -5609,27 +5609,61 @@
         nacht:{ std: 0, fak: 0, betrag: 0 },
         brutto: 0,
       };
+      // Helfer fuer Cents-Normalisierung von Geldwerten (Faktor + Betrag).
+      const norm100 = (v) => (v >= 1000 ? v / 100 : v);
+
       for (let li = 0; li < lines.length; li++) {
         const line = lines[li];
 
-        // LRE 1/2/3 — Label oder Lohnart 243
+        // === EXAKTE Pattern fuer Standard-DB-Lohnart-Zeilen ===
+        // Diese sind 100% deterministisch — keine Heuristik.
+
+        // LRE-Zeile: "LRE1 243 002 7826 15652 LL LRE1"
+        // Format: <LREx> <243> <Anzahl> <Faktor> <Betrag> ...
+        let m = line.match(/\bLRE\s*([123])\s+243\s+(\d+)\s+(\d+)\s+(\d+)\b/i);
+        if (m) {
+          const k = 'lre' + m[1];
+          block[k].cnt    = parseInt(m[2], 10);             // "001" → 1, "002" → 2
+          block[k].fak    = norm100(parseInt(m[3], 10));    // 7826 → 78.26
+          block[k].betrag = norm100(parseInt(m[4], 10));    // 15652 → 156.52
+          continue;
+        }
+        // Rufbereitschaft: "Rufbereitschaft 314 5300 ST 285 15105 LL N150 15105"
+        // Format: <Bezeichnung> <314> <Anzahl/100> ST <Faktor> <Betrag> ...
+        m = line.match(/Rufbereit\w*\s+314\s+(\d+)\s+ST\s+(\d+)\s+(\d+)\b/i);
+        if (m) {
+          block.ruf.std    = parseInt(m[1], 10) / 100;       // 5300 → 53.00
+          block.ruf.fak    = norm100(parseInt(m[2], 10));    // 285  → 2.85
+          block.ruf.betrag = norm100(parseInt(m[3], 10));    // 15105 → 151.05
+          continue;
+        }
+        // Nachtzulage: "Nachtzulage 216 400 ST 373 1492 GG N016"
+        m = line.match(/Nachtzulage\s+216\s+(\d+)\s+ST\s+(\d+)\s+(\d+)\b/i);
+        if (m) {
+          block.nacht.std    = parseInt(m[1], 10) / 100;     // 400 → 4.00
+          block.nacht.fak    = norm100(parseInt(m[2], 10));  // 373 → 3.73
+          block.nacht.betrag = norm100(parseInt(m[3], 10));  // 1492 → 14.92
+          continue;
+        }
+
+        // === FALLBACK: generische Heuristik fuer Sonder-Layouts ===
         const lreM = line.match(/\bLRE\s*([123])\b/i);
         if (lreM) {
           const k = 'lre' + lreM[1];
-          const nums = parseLineNumbers(effectiveLine(lines, li));
-          const r = pickAnzahlFaktorBetrag(nums);
-          if (r) { block[k].cnt = r.cnt; block[k].fak = r.fak; block[k].betrag = r.betrag; }
+          if (block[k].cnt === 0) {  // noch nicht via Exakt-Match gesetzt
+            const nums = parseLineNumbers(effectiveLine(lines, li));
+            const r = pickAnzahlFaktorBetrag(nums);
+            if (r) { block[k].cnt = r.cnt; block[k].fak = r.fak; block[k].betrag = r.betrag; }
+          }
           continue;
         }
-        // Rufbereitschaft (Lohnart 314). Breite Regex fuer Abkuerzungen.
-        if (/Ruf[\s.\-]*bereit/i.test(line) || /\b314\b/.test(line)) {
+        if ((/Ruf[\s.\-]*bereit/i.test(line) || /\b314\b/.test(line)) && block.ruf.std === 0) {
           const nums = parseLineNumbers(effectiveLine(lines, li));
           const r = pickAnzahlFaktorBetrag(nums);
           if (r) { block.ruf.std = r.cnt; block.ruf.fak = r.fak; block.ruf.betrag = r.betrag; }
           continue;
         }
-        // Nachtzulage (Lohnart 216)
-        if (/Nacht[\s.\-]*zulage/i.test(line) || (/\b216\b/.test(line) && /Nacht/i.test(line))) {
+        if ((/Nacht[\s.\-]*zulage/i.test(line) || (/\b216\b/.test(line) && /Nacht/i.test(line))) && block.nacht.std === 0) {
           const nums = parseLineNumbers(effectiveLine(lines, li));
           const r = pickAnzahlFaktorBetrag(nums);
           if (r) { block.nacht.std = r.cnt; block.nacht.fak = r.fak; block.nacht.betrag = r.betrag; }
@@ -6072,10 +6106,39 @@
       html += '</ul></div>';
     }
 
-    // 6) Roh-Text (collapsible)
+    // 6) Detail pro Block (Debug)
+    html += abrBlocksDebugSection(abr);
+
+    // 7) Roh-Text (collapsible)
     html += abrRawSection(a, b);
 
     el.innerHTML = html;
+  }
+  function abrBlocksDebugSection(abr) {
+    if (!abr || !abr.months) return '';
+    let html = '<details class="abr-details"><summary>Erkannte Lohnarten pro Block (Debug)</summary><pre>';
+    for (const month of abr.months) {
+      html += escapeHtml(month.monthKey) + ':\n';
+      for (const block of month.blocks) {
+        html += '  Block ' + escapeHtml(block.raw) + ':\n';
+        const rows = [
+          ['LRE1', block.lre1],
+          ['LRE2', block.lre2],
+          ['LRE3', block.lre3],
+          ['Ruf ', block.ruf],
+          ['Nacht', block.nacht],
+        ];
+        for (const [name, v] of rows) {
+          const cnt = v.cnt !== undefined ? v.cnt : v.std;
+          html += '    ' + name + ': Anzahl=' + abrFmtNum(cnt, 2)
+                + '  Faktor=' + abrFmtEUR(v.fak)
+                + '  Betrag=' + abrFmtEUR(v.betrag) + '\n';
+        }
+        html += '    Brutto: ' + abrFmtEUR(block.brutto) + '\n';
+      }
+    }
+    html += '</pre></details>';
+    return html;
   }
   function abrRawSection(a, b) {
     let html = '';
